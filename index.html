@@ -4,7 +4,7 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14233a;color:#fff;font-family:system-ui,Arial;touch-action:none}canvas{display:block;width:100%;height:100%}#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;font-weight:800;text-shadow:0 2px 3px #123;font-size:clamp(12px,2.4vw,18px)}.pill{background:#101827c9;border:1px solid #ffffff40;border-radius:13px;padding:7px 10px}#menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(#07142699,#071426ed);padding:18px}#panel{max-width:460px;width:100%;text-align:center;background:#14243a;border:1px solid #ffffff35;border-radius:24px;padding:24px;box-shadow:0 20px 70px #0009}h1{font-size:clamp(30px,8vw,46px);line-height:1;margin:0 0 10px;color:#ffe16b}p{line-height:1.45;color:#d7e5f5}button{border:0;border-radius:14px;background:#ffd447;color:#282018;font-weight:900;font-size:17px;padding:12px 20px;cursor:pointer}#controls{position:fixed;bottom:15px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.cluster{display:flex;gap:10px}.ctrl{pointer-events:auto;width:66px;height:66px;border-radius:50%;background:#14243acc;color:white;border:2px solid #ffffff99;font-size:26px;touch-action:none;user-select:none}.ctrl.small{width:52px;height:52px;font-size:19px}#hint{font-size:12px;color:#a9c3dc;margin-top:12px}#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#14243ae8;padding:9px 16px;border-radius:12px;display:none;font-weight:800}@media(min-width:850px){.ctrl{width:58px;height:58px}}
 </style></head><body>
 <canvas id="game"></canvas><div id="hud"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">МИР <span id="world">1</span> · КОМНАТА <span id="room">1</span>/50</div><div class="pill">⭐ <span id="score">0</span> · ❤️ <span id="lives">3</span></div></div><div id="toast"></div>
-<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">Прыжок под кирпичом — разбить его · На трубе нажми ⬇ чтобы нырнуть · 🔥 или F — огонь</div></div></div>
+<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">💥 Все платформы можно разбить ударом головой снизу · ⬇ на трубе — нырнуть · 🔥 — огонь</div></div></div>
 <div id="controls"><div class="cluster"><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="right">▶</button></div><div class="cluster"><button class="ctrl small" id="pause">Ⅱ</button><button class="ctrl small" data-key="down">⬇</button><button class="ctrl" data-key="jump">⬆</button><button class="ctrl small" data-key="shoot">🔥</button></div></div>
 <script>
 (()=>{'use strict';
@@ -39,7 +39,7 @@ function build(){
  for(let i=0;i<count;i++){
   x+=125+Math.floor(rng()*95);const row=1+Math.floor(rng()*3),w=72+Math.floor(rng()*95);
   const y=H-112-row*(53+Math.floor(rng()*9));
-  platforms.push({x,y,w,h:17,type:(i%4===2?'brick':'platform'),broken:false});
+  platforms.push({x,y,w,h:17,type:'brick',breakable:true,broken:false});
   if(i%3===1||room%5===0)blocks.push({x:x+Math.floor(w/2)-16,y:y-62,w:32,h:30,used:false,kind:rng()>.75?'power':'coin',bump:0});
   if(i%2===0)items.push({x:x+24,y:y-36,type:rng()>.87?'star':'coin',got:false});
   if(i%3===0)enemies.push({x:x+65,y:H-97,base:x+65,range:42+rng()*55,v:(rng()>.5?1:-1)*(65+room*1.5),alive:true});
@@ -47,7 +47,7 @@ function build(){
  // Pipes and raised routes vary by room.
  for(let i=0;i<3+(room%3);i++){let px=310+i*(430+(room%4)*21)+rng()*65;pipes.push({x:px,y:H-65-(45+(i%3)*15),w:54,h:45+(i%3)*15})}
  if(room%4===0){secrets.push({x:worldW*.52,y:H-65-230,w:110,h:18,hidden:true});items.push({x:worldW*.55,y:H-65-270,type:'star',got:false})}
- if(room%7===0){for(let i=0;i<4;i++)platforms.push({x:worldW-700+i*115,y:H-200-(i%2)*55,w:90,h:16,moving:true,baseY:H-200-(i%2)*55,phase:i})}
+ if(room%7===0){for(let i=0;i<4;i++)platforms.push({x:worldW-700+i*115,y:H-200-(i%2)*55,w:90,h:16,type:'brick',breakable:true,moving:true,baseY:H-200-(i%2)*55,phase:i})}
  goal=worldW-100;player.x=55;player.y=H-160;player.vx=player.vy=0;player.big=false;player.power=0;cam=0;ui();
 }
 function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
