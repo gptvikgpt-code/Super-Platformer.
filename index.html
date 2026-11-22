@@ -20,10 +20,19 @@ const themes=[
 let room=1,coins=0,score=0,lives=3,cam=0,running=false,paused=false,last=0,worldW=2600,theme=themes[0],platforms=[],blocks=[],items=[],enemies=[],pipes=[],secrets=[],goal=0,toastTimer=0;
 const player={x:60,y:0,w:30,h:42,vx:0,vy:0,ground:false,face:1,inv:0,big:false,power:0};
 function randGen(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+function themeForRoom(n){
+ const hue=((n-1)*137.508+18)%360, hue2=(hue+42+((n*17)%55))%360;
+ const palette=[
+  [`hsl(${hue},82%,66%)`,`hsl(${(hue+28)%360},90%,88%)`],
+  `hsl(${hue2},45%,34%)`,`hsl(${(hue+112)%360},58%,53%)`,
+  `hsl(${(hue+190)%360},42%,48%)`,`hsl(${(hue+205)%360},65%,42%)`
+ ];
+ return {name:['Изумрудная долина','Песчаный каньон','Кристальные пещеры','Сумрачный лес','Лавовая крепость'][Math.floor((n-1)/10)]+' · комната '+n,sky:palette[0],ground:palette[1],top:palette[2],hill:palette[3],accent:palette[4]};
+}
 function say(t){const el=$('toast');el.textContent=t;el.style.display='block';toastTimer=1.7}
-function ui(){$('coins').textContent=coins;$('score').textContent=score;$('lives').textContent=lives;$('world').textContent=Math.ceil(room/10);$('room').textContent=room}
+function ui(){$('coins').textContent=coins;$('score').textContent=score;$('lives').textContent=lives;$('world').textContent=Math.min(5,Math.ceil(room/10));$('room').textContent=room}
 function build(){
- const rng=randGen(room*7919+37),world=Math.floor((room-1)/10);theme=themes[world];worldW=2500+(room%4)*180;
+ const rng=randGen(room*7919+37),world=Math.floor((room-1)/10);theme=themeForRoom(room);worldW=2350+((room*73)%7)*145;
  platforms=[{x:0,y:H-65,w:worldW,h:100}];blocks=[];items=[];enemies=[];pipes=[];secrets=[];
  // Ten distinct room patterns per world, with seeded variation in every room.
  let x=130;const count=11+(room%4);
@@ -43,7 +52,7 @@ function build(){
 }
 function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function hurt(){if(player.inv>0)return;lives--;ui();if(lives<=0){running=false;$('panel').querySelector('h1').innerHTML='ИГРА ОКОНЧЕНА';$('desc').textContent='Счёт: '+score+' · Монеты: '+coins+' · Достигнута комната: '+room;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';coins=0;score=0;lives=3;room=1;ui()}else{player.x=Math.max(0,player.x-100);player.y=H-180;player.vy=0;player.inv=1.6}}
-function nextRoom(){if(room>=50){running=false;$('panel').querySelector('h1').textContent='ПОБЕДА!';$('desc').textContent='Все 50 комнат пройдены! Итоговый счёт: '+score;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';room=1;return}room++;score+=250;say('Комната '+room+' — '+themes[Math.floor((room-1)/10)].name);build()}
+function nextRoom(){if(room>=50){running=false;$('panel').querySelector('h1').textContent='ПОБЕДА!';$('desc').textContent='Все 50 комнат пройдены! Итоговый счёт: '+score;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';room=1;ui();return}room++;score+=250;build();say('НОВАЯ КОМНАТА '+room+' — НОВАЯ ЦВЕТОВАЯ ТЕМА!')}
 function update(dt){
  if(!running||paused)return;const p=player;p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;
  let dir=(keys.right?1:0)-(keys.left?1:0);if(dir){p.vx+=dir*1700*dt;p.face=dir}else p.vx*=Math.pow(.0008,dt);p.vx=Math.max(-285,Math.min(285,p.vx));
