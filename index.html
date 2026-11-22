@@ -104,7 +104,7 @@ function update(dt){
    // A rising player hits the underside: brick platforms shatter, bonus blocks bump.
    else if(p.vy<0&&oldY>=q.y+q.h-8&&p.y<=q.y+q.h){
     p.y=q.y+q.h;p.vy=35;
-    if(q.type==='brick'||q.breakable){q.broken=true;score+=25;say('💥 БЛОК РАЗБИТ!');ui()}
+    if(q.type==='brick'||q.breakable){q.broken=true;const qi=platforms.indexOf(q);if(qi>=0)netSend({type:'platformBreak',id:qi});score+=25;say('💥 БЛОК РАЗБИТ!');ui()}
     else if(q.kind&&!q.used){q.used=true;q.bump=.16;if(q.kind==='power'){p.big=true;p.power=8;say('Усиление!')}else{coins++;score+=20;say('+ монета')}ui()}
    }
   }
