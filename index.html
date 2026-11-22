@@ -6,7 +6,7 @@
 <canvas id="game"></canvas><div id="hud"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">МИР <span id="world">1</span> · КОМНАТА <span id="room">1</span>/50</div><div class="pill">⭐ <span id="score">0</span> · ❤️ <span id="lives">3</span></div></div><div id="toast"></div><div id="netBadge">🌐 Друг подключён</div>
 <div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">💥 Все платформы можно разбить ударом головой снизу · ⬇ на трубе — нырнуть · 🔥 — огонь</div><div id="online"><b>🌐 ИГРА С ДРУГОМ</b><div id="netStatus">Создай комнату или введи код друга</div><button id="createRoom">СОЗДАТЬ КОМНАТУ</button><div style="margin:8px 0"><input id="joinCode" inputmode="numeric" maxlength="6" placeholder="6 цифр"><button id="joinRoom">ПОДКЛЮЧИТЬСЯ</button></div><div id="myCode" style="font-size:14px;color:#ffe16b;font-weight:900"></div></div></div></div>
 <div id="controls"><div class="cluster"><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="right">▶</button></div><div class="cluster"><button class="ctrl small" id="pause">Ⅱ</button><button class="ctrl small" data-key="down">⬇</button><button class="ctrl" data-key="jump">⬆</button><button class="ctrl small" data-key="shoot">🔥</button></div></div>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script><script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script><script>
 (()=>{'use strict';
 const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');let W=innerWidth,H=innerHeight,D=1;
 function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*D;canvas.height=H*D;ctx.setTransform(D,0,0,D,0,0)}addEventListener('resize',resize);resize();
@@ -18,25 +18,25 @@ function netSend(data){if(netConn&&netConn.open){try{netConn.send(data)}catch(e)
 function netAttach(conn){
  netConn=conn;
  conn.on('open',()=>{remotePlayer={x:100,y:100,face:1,big:false};netStatus('🟢 Друг подключён! Игра запускается.');$('netBadge').style.display='block';if(!running)start();say('Игрок подключился!')});
- conn.on('data',d=>{if(!d||typeof d!=='object')return;if(d.type==='state'){remotePlayer=d.player;if(Number.isInteger(d.room)&&d.room!==room&&d.room>=1&&d.room<=50){room=d.room;build();say('Переход в комнату '+room)}}});
+ conn.on('data',d=>{if(!d||typeof d!=='object')return;if(d.type==='state'&&d.player){remotePlayer=d.player;if(Number.isInteger(d.room)&&d.room!==room&&d.room>=1&&d.room<=50){room=d.room;build();say('Переход в комнату '+room)}}});
  conn.on('close',()=>{remotePlayer=null;$('netBadge').style.display='none';netStatus('Соединение с другом прервано')});
- conn.on('error',()=>netStatus('Ошибка соединения. Попробуйте подключиться ещё раз.'));
+ conn.on('error',e=>netStatus('Ошибка канала связи: '+(e&&e.type||'проверьте интернет')));
 }
 function netCreate(){
  if(typeof Peer==='undefined'){netStatus('Не загрузился сетевой модуль. Проверь интернет и обнови страницу.');return}
  if(netPeer)netPeer.destroy();netRole='host';netCode=String(Math.floor(100000+Math.random()*900000));netStatus('Создаю комнату…');$('myCode').textContent='';
- netPeer=new Peer('mario'+netCode,{host:'0.peerjs.com',port:443,path:'/',secure:true});
+ netPeer=new Peer('mario'+netCode,{host:'0.peerjs.com',port:443,path:'/',secure:true,debug:1,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'turn:eu-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'},{urls:'turn:us-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'}]}});
  netPeer.on('open',()=>{$('myCode').textContent='ТВОЙ КОД: '+netCode;netStatus('Ждём друга. Отправь ему шестизначный код.')});
  netPeer.on('connection',conn=>netAttach(conn));
- netPeer.on('error',e=>netStatus(e.type==='unavailable-id'?'Код занят, создай комнату ещё раз.':'Сетевая ошибка: '+e.type));
+ netPeer.on('error',e=>netStatus(e.type==='unavailable-id'?'Код уже занят. Создай комнату заново.':e.type==='network'?'Нет связи с сервером комнат. Проверь интернет или отключи блокировщик.':'Ошибка сервера: '+e.type));
 }
 function netJoin(){
  if(typeof Peer==='undefined'){netStatus('Не загрузился сетевой модуль. Проверь интернет и обнови страницу.');return}
  const code=$('joinCode').value.replace(/\D/g,'');if(!/^\d{6}$/.test(code)){netStatus('Введи ровно 6 цифр.');return}
  if(netPeer)netPeer.destroy();netRole='guest';netCode=code;netStatus('Подключаюсь к комнате '+code+'…');
- netPeer=new Peer(undefined,{host:'0.peerjs.com',port:443,path:'/',secure:true});
- netPeer.on('open',()=>netAttach(netPeer.connect('mario'+code,{reliable:true})));
- netPeer.on('error',e=>netStatus('Не удалось подключиться: '+e.type+'. Проверь код и попробуй снова.'));
+ netPeer=new Peer(undefined,{host:'0.peerjs.com',port:443,path:'/',secure:true,debug:1,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'turn:eu-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'},{urls:'turn:us-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'}]}});
+ netPeer.on('open',()=>{netStatus('Сервер найден. Соединяюсь с комнатой…');const conn=netPeer.connect('mario'+code,{reliable:true,serialization:'json'});netAttach(conn);conn.on('error',e=>netStatus(e&&e.type==='peer-unavailable'?'Комната не найдена. Проверь код у друга.':'Не удалось установить связь: '+(e&&e.type||'ошибка сети')))});
+ netPeer.on('error',e=>netStatus(e.type==='peer-unavailable'?'Комната не найдена или друг закрыл страницу.':e.type==='network'?'Сервер комнат недоступен в этой сети.':'Не удалось подключиться: '+e.type));
 }
 $('createRoom').addEventListener('click',netCreate);$('joinRoom').addEventListener('click',netJoin);
 $('joinCode').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,6)});
