@@ -5,8 +5,33 @@
 <script>
 (()=>{const c=document.getElementById('game'),ctx=c.getContext('2d');let W=innerWidth,H=innerHeight,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
 const keys={left:false,right:false,jump:false};let running=false,paused=false,coins=0,score=0,lives=3,level=1,camera=0,last=0,acc=0;const player={x:70,y:0,vx:0,vy:0,w:30,h:42,ground:false,face:1,inv:0};
-let platforms=[],items=[],enemies=[],goal=0,worldW=2400;
-function build(){worldW=2300+level*280;platforms=[{x:0,y:H-70,w:worldW,h:100}];let x=210;while(x<worldW-260){let y=H-150-Math.random()*Math.min(150,H*.22);platforms.push({x,y,w:100+Math.random()*100,h:18});if(Math.random()>.3)platforms.push({x:x+210,y:y+65,w:90,h:18});x+=300+Math.random()*90}items=[];for(let x=150;x<worldW-220;x+=125){let p=platforms.filter(p=>p.x<=x&&p.x+p.w>=x).sort((a,b)=>a.y-b.y)[0];items.push({x,y:(p?p.y:H-70)-35,type:Math.random()>.12?'coin':'star',got:false})}enemies=[];for(let x=450;x<worldW-250;x+=430)enemies.push({x,y:H-112,v:1.1+level*.12,alive:true,base:x});goal=worldW-110;player.x=70;player.y=H-150;player.vx=player.vy=0;camera=0}
+let platforms=[],items=[],enemies=[],pipes=[],worldTheme={sky:['#63c9f0','#d8f5ff'],ground:'#8a542b',grass:'#44b94e',hill:'#55b88a',pipe:'#239b50',cloud:true},goal=0,worldW=2400;
+function build(){
+const themes=[
+{ name:'Зелёные холмы',sky:['#63c9f0','#d8f5ff'],ground:'#8a542b',grass:'#44b94e',hill:'#55b88a',pipe:'#239b50',cloud:true },
+{ name:'Песчаная долина',sky:['#f7b85b','#ffe9a8'],ground:'#a96b32',grass:'#e5b84b',hill:'#c58a43',pipe:'#378f54',cloud:false },
+{ name:'Ледяные пещеры',sky:['#193e70','#8ddcf5'],ground:'#557d9e',grass:'#b9ecf5',hill:'#4e8eb4',pipe:'#57b7b2',cloud:false },
+{ name:'Ночной лес',sky:['#10152f','#3c3978'],ground:'#49345f',grass:'#6cba73',hill:'#252c57',pipe:'#7b54b5',cloud:false },
+{ name:'Лавовый замок',sky:['#351b28','#c64b32'],ground:'#51414a',grass:'#e45c36',hill:'#642d39',pipe:'#b94b36',cloud:false }
+];
+worldTheme=themes[(level-1)%themes.length];
+const layouts=[
+[[180,0,125],[390,1,110],[610,0,145],[850,2,115],[1080,1,150],[1330,0,110],[1550,2,140],[1800,1,130],[2050,0,150],[2300,2,120]],
+[[160,2,130],[390,1,120],[620,2,150],[900,0,110],[1110,1,140],[1370,2,130],[1620,0,150],[1900,1,130],[2170,2,150],[2460,0,120]],
+[[150,0,110],[350,2,120],[560,1,130],[790,0,110],[1010,2,150],[1280,1,130],[1530,0,110],[1750,2,150],[2020,1,120],[2260,0,150],[2540,2,130]],
+[[170,1,140],[420,0,100],[620,2,120],[850,1,140],[1110,0,120],[1340,2,150],[1610,1,120],[1850,0,140],[2120,2,130],[2390,1,150]],
+[[180,2,130],[420,1,140],[680,0,110],[900,2,140],[1160,1,120],[1390,0,140],[1650,2,120],[1890,1,150],[2170,0,130],[2440,2,150]]
+];
+const pattern=layouts[(level-1)%layouts.length];
+worldW=2850+Math.floor((level-1)/5)*250;
+platforms=[{x:0,y:H-70,w:worldW,h:100}];pipes=[];
+for(let i=0;i<pattern.length;i++){const [x,row,w]=pattern[i];const y=H-145-row*78;platforms.push({x,y,w,h:18});}
+for(let i=0;i<5;i++){const px=330+i*510+(level%3)*45;pipes.push({x:px,y:H-70-hPipe(),w:54,h:hPipe()});}
+function hPipe(){return 55+(level%3)*12}
+items=[];for(let i=0;i<pattern.length;i++){const [x,row,w]=pattern[i];for(let k=0;k<3;k++)items.push({x:x+22+k*30,y:H-180-row*78,type:(i%4===2&&k===1)?'star':'coin',got:false})}
+enemies=[];for(let i=0;i<6+Math.floor(level/2);i++){const x=260+i*390+(level%2)*60;enemies.push({x,y:H-112,v:(i%2?1:-1)*(1.0+level*.1),alive:true,base:x})}
+goal=worldW-110;player.x=70;player.y=H-150;player.vx=player.vy=0;camera=0
+}
 function ui(){document.getElementById('coins').textContent=coins;document.getElementById('score').textContent=score;document.getElementById('lives').textContent=lives;document.getElementById('level').textContent=level}
 function start(){document.getElementById('menu').style.display='none';running=true;paused=false;build();last=performance.now();requestAnimationFrame(loop)}
 document.getElementById('start').onclick=start;document.getElementById('pause').onclick=()=>{if(!running)return;paused=!paused;document.getElementById('pause').textContent=paused?'▶':'Ⅱ'};
@@ -14,10 +39,12 @@ document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key;const se
 addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' ','a','d','w','A','D','W'].includes(e.key))e.preventDefault();if(['ArrowLeft','a','A'].includes(e.key))keys.left=true;if(['ArrowRight','d','D'].includes(e.key))keys.right=true;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=true;if(e.key==='Escape')paused=!paused});
 addEventListener('keyup',e=>{if(['ArrowLeft','a','A'].includes(e.key))keys.left=false;if(['ArrowRight','d','D'].includes(e.key))keys.right=false;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=false});
 function rect(x,y,w,h,col){ctx.fillStyle=col;ctx.fillRect(x-camera,y,w,h)}
-function draw(){ctx.clearRect(0,0,W,H);let sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#63c9f0');sky.addColorStop(1,'#d8f5ff');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
-for(let i=0;i<9;i++){let x=((i*310-camera*.28)%(W+260)+W+260)%(W+260)-120;ctx.fillStyle='#ffffffaa';ctx.beginPath();ctx.arc(x,100+(i%3)*48,24,0,7);ctx.arc(x+28,94+(i%3)*48,30,0,7);ctx.arc(x+58,103+(i%3)*48,21,0,7);ctx.fill()}
-for(let i=0;i<8;i++){let x=((i*370-camera*.5)%(W+400)+W+400)%(W+400)-160;ctx.fillStyle='#55b88a';ctx.beginPath();ctx.moveTo(x,H-70);ctx.lineTo(x+170,H-230-(i%3)*40);ctx.lineTo(x+340,H-70);ctx.fill()}
-platforms.forEach(p=>{if(p.x+p.w<camera-30||p.x>camera+W+30)return;rect(p.x,p.y,p.w,p.h,'#8a542b');rect(p.x,p.y,p.w,7,'#44b94e');for(let xx=p.x+12;xx<p.x+p.w;xx+=28)rect(xx,p.y+13,12,4,'#bd8250')});
+function draw(){ctx.clearRect(0,0,W,H);let sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,worldTheme.sky[0]);sky.addColorStop(1,worldTheme.sky[1]);ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+if(worldTheme.cloud){for(let i=0;i<8;i++){let x=((i*310-camera*.28)%(W+260)+W+260)%(W+260)-120;ctx.fillStyle='#ffffffaa';ctx.beginPath();ctx.arc(x,100+(i%3)*48,24,0,7);ctx.arc(x+28,94+(i%3)*48,30,0,7);ctx.arc(x+58,103+(i%3)*48,21,0,7);ctx.fill()}}
+for(let i=0;i<9;i++){let x=((i*370-camera*.35)%(W+400)+W+400)%(W+400)-160;ctx.fillStyle=worldTheme.hill;ctx.beginPath();ctx.moveTo(x,H-70);ctx.lineTo(x+170,H-230-(i%3)*40);ctx.lineTo(x+340,H-70);ctx.fill()}
+if(!worldTheme.cloud){for(let i=0;i<18;i++){let x=((i*113-camera*.18)%(W+130)+W+130)%(W+130)-50;ctx.fillStyle=worldTheme.name==='Лавовый замок'?'#ff8a45':worldTheme.name==='Ледяные пещеры'?'#d8ffff':'#ffe58a';ctx.globalAlpha=.65;ctx.beginPath();ctx.arc(x,55+(i*47)%Math.max(100,H-140),2+(i%3),0,7);ctx.fill();ctx.globalAlpha=1}}
+pipes.forEach(q=>{let x=q.x-camera;if(x<-80||x>W+80)return;ctx.fillStyle=worldTheme.pipe;ctx.fillRect(x+6,q.y+10,q.w-12,q.h-10);ctx.fillRect(x,q.y,q.w,18);ctx.fillStyle='#ffffff55';ctx.fillRect(x+7,q.y+4,7,q.h-8)});
+platforms.forEach(p=>{if(p.x+p.w<camera-30||p.x>camera+W+30)return;rect(p.x,p.y,p.w,p.h,worldTheme.ground);rect(p.x,p.y,p.w,7,worldTheme.grass);for(let xx=p.x+12;xx<p.x+p.w;xx+=28)rect(xx,p.y+13,12,4,'#bd8250')});
 items.forEach(o=>{if(o.got)return;let x=o.x-camera;if(x<-30||x>W+30)return;ctx.fillStyle=o.type==='star'?'#ffdf38':'#ffb51b';ctx.beginPath();if(o.type==='star'){for(let j=0;j<10;j++){let a=-Math.PI/2+j*Math.PI/5,r=j%2?7:14;ctx.lineTo(x+Math.cos(a)*r,o.y+Math.sin(a)*r)}}else ctx.arc(x,o.y,10,0,7);ctx.fill()});
 enemies.forEach(e=>{if(!e.alive)return;let x=e.x-camera;ctx.fillStyle='#9a4aaf';ctx.beginPath();ctx.roundRect(x-15,e.y-17,30,30,9);ctx.fill();ctx.fillStyle='white';ctx.fillRect(x-8,e.y-8,5,7);ctx.fillRect(x+4,e.y-8,5,7);ctx.fillStyle='#29142e';ctx.fillRect(x-6,e.y+8,12,3)});
 rect(goal,H-160,8,90,'#f4f4f4');rect(goal+8,H-160,48,30,'#ffdf46');ctx.fillStyle='#ffdf46';ctx.beginPath();ctx.moveTo(goal+8-camera,H-160);ctx.lineTo(goal+54-camera,H-145);ctx.lineTo(goal+8-camera,H-130);ctx.fill();
