@@ -1,63 +1,93 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#101827"><title>Super Platformer</title><style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101827;color:#fff;font-family:system-ui,Arial;touch-action:none}#game{display:block;width:100%;height:100%;background:#80d9f5}#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;text-shadow:0 2px 3px #123;font-weight:800;font-size:clamp(14px,2.5vw,20px)}.pill{background:#101827bb;border:1px solid #ffffff40;border-radius:14px;padding:8px 12px}#menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(#07142699,#071426dd);padding:20px}#panel{max-width:440px;width:100%;text-align:center;background:#14243a;border:1px solid #ffffff30;border-radius:24px;padding:26px;box-shadow:0 20px 70px #0008}h1{font-size:clamp(30px,8vw,48px);margin:0 0 8px;color:#ffe16b}p{line-height:1.45;color:#d7e5f5}button{border:0;border-radius:14px;background:#ffd447;color:#282018;font-weight:900;font-size:17px;padding:13px 22px;cursor:pointer;box-shadow:0 4px 0 #b67d18}button:active{transform:translateY(3px);box-shadow:0 1px 0 #b67d18}#controls{position:fixed;bottom:18px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.cluster{display:flex;gap:12px}.ctrl{pointer-events:auto;width:68px;height:68px;border-radius:50%;background:#14243acc;color:white;border:2px solid #ffffff99;font-size:27px;box-shadow:0 4px 0 #09111d99;touch-action:none;user-select:none}.ctrl.small{width:56px;height:56px;font-size:21px}#hint{font-size:12px;color:#a9c3dc;margin-top:14px}@media(min-width:850px){#controls{opacity:.7}.ctrl{width:60px;height:60px}}
-</style></head><body><canvas id="game"></canvas><div id="hud"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">МИР <span id="level">1</span> · ❤️ <span id="lives">3</span></div><div class="pill">⭐ <span id="score">0</span></div></div><div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p>Пробегай уровни, собирай монеты и звёзды, прыгай по платформам и обходи врагов. Доберись до флага!</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">Телефон: кнопки снизу · Компьютер: A/D или ←/→, прыжок — W/↑/Пробел</div></div></div><div id="controls"><div class="cluster"><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="right">▶</button></div><div class="cluster"><button class="ctrl small" id="pause">Ⅱ</button><button class="ctrl" data-key="jump">⬆</button></div></div>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#14233a"><title>Super Platformer — 50 комнат</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14233a;color:#fff;font-family:system-ui,Arial;touch-action:none}canvas{display:block;width:100%;height:100%}#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;font-weight:800;text-shadow:0 2px 3px #123;font-size:clamp(12px,2.4vw,18px)}.pill{background:#101827c9;border:1px solid #ffffff40;border-radius:13px;padding:7px 10px}#menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(#07142699,#071426ed);padding:18px}#panel{max-width:460px;width:100%;text-align:center;background:#14243a;border:1px solid #ffffff35;border-radius:24px;padding:24px;box-shadow:0 20px 70px #0009}h1{font-size:clamp(30px,8vw,46px);line-height:1;margin:0 0 10px;color:#ffe16b}p{line-height:1.45;color:#d7e5f5}button{border:0;border-radius:14px;background:#ffd447;color:#282018;font-weight:900;font-size:17px;padding:12px 20px;cursor:pointer}#controls{position:fixed;bottom:15px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.cluster{display:flex;gap:10px}.ctrl{pointer-events:auto;width:66px;height:66px;border-radius:50%;background:#14243acc;color:white;border:2px solid #ffffff99;font-size:26px;touch-action:none;user-select:none}.ctrl.small{width:52px;height:52px;font-size:19px}#hint{font-size:12px;color:#a9c3dc;margin-top:12px}#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#14243ae8;padding:9px 16px;border-radius:12px;display:none;font-weight:800}@media(min-width:850px){.ctrl{width:58px;height:58px}}
+</style></head><body>
+<canvas id="game"></canvas><div id="hud"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">МИР <span id="world">1</span> · КОМНАТА <span id="room">1</span>/50</div><div class="pill">⭐ <span id="score">0</span> · ❤️ <span id="lives">3</span></div></div><div id="toast"></div>
+<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">Телефон: кнопки снизу · ПК: A/D или ←/→, прыжок — W/↑/Пробел, пауза — Esc</div></div></div>
+<div id="controls"><div class="cluster"><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="right">▶</button></div><div class="cluster"><button class="ctrl small" id="pause">Ⅱ</button><button class="ctrl" data-key="jump">⬆</button></div></div>
 <script>
-(()=>{const c=document.getElementById('game'),ctx=c.getContext('2d');let W=innerWidth,H=innerHeight,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
-const keys={left:false,right:false,jump:false};let running=false,paused=false,coins=0,score=0,lives=3,level=1,camera=0,last=0,acc=0;const player={x:70,y:0,vx:0,vy:0,w:30,h:42,ground:false,face:1,inv:0};
-let platforms=[],items=[],enemies=[],pipes=[],worldTheme={sky:['#63c9f0','#d8f5ff'],ground:'#8a542b',grass:'#44b94e',hill:'#55b88a',pipe:'#239b50',cloud:true},goal=0,worldW=2400;
-function build(){
+(()=>{'use strict';
+const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');let W=innerWidth,H=innerHeight,D=1;
+function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*D;canvas.height=H*D;ctx.setTransform(D,0,0,D,0,0)}addEventListener('resize',resize);resize();
+const $=id=>document.getElementById(id),keys={left:false,right:false,jump:false};
 const themes=[
-{ name:'Зелёные холмы',sky:['#63c9f0','#d8f5ff'],ground:'#8a542b',grass:'#44b94e',hill:'#55b88a',pipe:'#239b50',cloud:true },
-{ name:'Песчаная долина',sky:['#f7b85b','#ffe9a8'],ground:'#a96b32',grass:'#e5b84b',hill:'#c58a43',pipe:'#378f54',cloud:false },
-{ name:'Ледяные пещеры',sky:['#193e70','#8ddcf5'],ground:'#557d9e',grass:'#b9ecf5',hill:'#4e8eb4',pipe:'#57b7b2',cloud:false },
-{ name:'Ночной лес',sky:['#10152f','#3c3978'],ground:'#49345f',grass:'#6cba73',hill:'#252c57',pipe:'#7b54b5',cloud:false },
-{ name:'Лавовый замок',sky:['#351b28','#c64b32'],ground:'#51414a',grass:'#e45c36',hill:'#642d39',pipe:'#b94b36',cloud:false }
-];
-worldTheme=themes[(level-1)%themes.length];
-const layouts=[
-[[180,0,125],[390,1,110],[610,0,145],[850,2,115],[1080,1,150],[1330,0,110],[1550,2,140],[1800,1,130],[2050,0,150],[2300,2,120]],
-[[160,2,130],[390,1,120],[620,2,150],[900,0,110],[1110,1,140],[1370,2,130],[1620,0,150],[1900,1,130],[2170,2,150],[2460,0,120]],
-[[150,0,110],[350,2,120],[560,1,130],[790,0,110],[1010,2,150],[1280,1,130],[1530,0,110],[1750,2,150],[2020,1,120],[2260,0,150],[2540,2,130]],
-[[170,1,140],[420,0,100],[620,2,120],[850,1,140],[1110,0,120],[1340,2,150],[1610,1,120],[1850,0,140],[2120,2,130],[2390,1,150]],
-[[180,2,130],[420,1,140],[680,0,110],[900,2,140],[1160,1,120],[1390,0,140],[1650,2,120],[1890,1,150],[2170,0,130],[2440,2,150]]
-];
-const pattern=layouts[(level-1)%layouts.length];
-worldW=2850+Math.floor((level-1)/5)*250;
-platforms=[{x:0,y:H-70,w:worldW,h:100}];pipes=[];
-for(let i=0;i<pattern.length;i++){const [x,row,w]=pattern[i];const y=H-145-row*78;platforms.push({x,y,w,h:18});}
-for(let i=0;i<5;i++){const px=330+i*510+(level%3)*45;pipes.push({x:px,y:H-70-hPipe(),w:54,h:hPipe()});}
-function hPipe(){return 55+(level%3)*12}
-items=[];for(let i=0;i<pattern.length;i++){const [x,row,w]=pattern[i];for(let k=0;k<3;k++)items.push({x:x+22+k*30,y:H-180-row*78,type:(i%4===2&&k===1)?'star':'coin',got:false})}
-enemies=[];for(let i=0;i<6+Math.floor(level/2);i++){const x=260+i*390+(level%2)*60;enemies.push({x,y:H-112,v:(i%2?1:-1)*(1.0+level*.1),alive:true,base:x})}
-goal=worldW-110;player.x=70;player.y=H-150;player.vx=player.vy=0;camera=0
+{name:'Зелёные равнины',sky:['#54c7f0','#d9f7ff'],ground:'#94552d',top:'#55bd45',hill:'#5ab987',accent:'#239b50'},
+{name:'Песчаное королевство',sky:['#f4ae54','#ffe8a2'],ground:'#a96835',top:'#e7bd55',hill:'#c48b47',accent:'#39945a'},
+{name:'Ледяные пещеры',sky:['#183b6c','#a6e6f5'],ground:'#557e9d',top:'#c4eff5',hill:'#4c8eae',accent:'#55b9bd'},
+{name:'Сумрачный лес',sky:['#11152f','#49417d'],ground:'#49375f',top:'#70b66d',hill:'#292e5d',accent:'#8a5ac0'},
+{name:'Лавовый замок',sky:['#351b28','#d05232'],ground:'#51414a',top:'#ed683b',hill:'#6a2d3a',accent:'#b74a36'}];
+let room=1,coins=0,score=0,lives=3,cam=0,running=false,paused=false,last=0,worldW=2600,theme=themes[0],platforms=[],blocks=[],items=[],enemies=[],pipes=[],secrets=[],goal=0,toastTimer=0;
+const player={x:60,y:0,w:30,h:42,vx:0,vy:0,ground:false,face:1,inv:0,big:false,power:0};
+function randGen(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+function say(t){const el=$('toast');el.textContent=t;el.style.display='block';toastTimer=1.7}
+function ui(){$('coins').textContent=coins;$('score').textContent=score;$('lives').textContent=lives;$('world').textContent=Math.ceil(room/10);$('room').textContent=room}
+function build(){
+ const rng=randGen(room*7919+37),world=Math.floor((room-1)/10);theme=themes[world];worldW=2500+(room%4)*180;
+ platforms=[{x:0,y:H-65,w:worldW,h:100}];blocks=[];items=[];enemies=[];pipes=[];secrets=[];
+ // Ten distinct room patterns per world, with seeded variation in every room.
+ let x=130;const count=11+(room%4);
+ for(let i=0;i<count;i++){
+  x+=125+Math.floor(rng()*95);const row=1+Math.floor(rng()*3),w=72+Math.floor(rng()*95);
+  const y=H-112-row*(53+Math.floor(rng()*9));
+  platforms.push({x,y,w,h:17,type:'platform'});
+  if(i%3===1||room%5===0)blocks.push({x:x+Math.floor(w/2)-16,y:y-62,w:32,h:30,used:false,kind:rng()>.75?'power':'coin',bump:0});
+  if(i%2===0)items.push({x:x+24,y:y-36,type:rng()>.87?'star':'coin',got:false});
+  if(i%3===0)enemies.push({x:x+65,y:H-97,base:x+65,range:42+rng()*55,v:(rng()>.5?1:-1)*(65+room*1.5),alive:true});
+ }
+ // Pipes and raised routes vary by room.
+ for(let i=0;i<3+(room%3);i++){let px=310+i*(430+(room%4)*21)+rng()*65;pipes.push({x:px,y:H-65-(45+(i%3)*15),w:54,h:45+(i%3)*15})}
+ if(room%4===0){secrets.push({x:worldW*.52,y:H-65-230,w:110,h:18,hidden:true});items.push({x:worldW*.55,y:H-65-270,type:'star',got:false})}
+ if(room%7===0){for(let i=0;i<4;i++)platforms.push({x:worldW-700+i*115,y:H-200-(i%2)*55,w:90,h:16,moving:true,baseY:H-200-(i%2)*55,phase:i})}
+ goal=worldW-100;player.x=55;player.y=H-160;player.vx=player.vy=0;player.big=false;player.power=0;cam=0;ui();
 }
-function ui(){document.getElementById('coins').textContent=coins;document.getElementById('score').textContent=score;document.getElementById('lives').textContent=lives;document.getElementById('level').textContent=level}
-function start(){document.getElementById('menu').style.display='none';running=true;paused=false;build();last=performance.now();requestAnimationFrame(loop)}
-document.getElementById('start').onclick=start;document.getElementById('pause').onclick=()=>{if(!running)return;paused=!paused;document.getElementById('pause').textContent=paused?'▶':'Ⅱ'};
-document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key;const set=v=>{keys[k]=v};b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);set(true)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>set(false)))});
-addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' ','a','d','w','A','D','W'].includes(e.key))e.preventDefault();if(['ArrowLeft','a','A'].includes(e.key))keys.left=true;if(['ArrowRight','d','D'].includes(e.key))keys.right=true;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=true;if(e.key==='Escape')paused=!paused});
+function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function hurt(){if(player.inv>0)return;lives--;ui();if(lives<=0){running=false;$('panel').querySelector('h1').innerHTML='ИГРА ОКОНЧЕНА';$('desc').textContent='Счёт: '+score+' · Монеты: '+coins+' · Достигнута комната: '+room;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';coins=0;score=0;lives=3;room=1;ui()}else{player.x=Math.max(0,player.x-100);player.y=H-180;player.vy=0;player.inv=1.6}}
+function nextRoom(){if(room>=50){running=false;$('panel').querySelector('h1').textContent='ПОБЕДА!';$('desc').textContent='Все 50 комнат пройдены! Итоговый счёт: '+score;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';room=1;return}room++;score+=250;say('Комната '+room+' — '+themes[Math.floor((room-1)/10)].name);build()}
+function update(dt){
+ if(!running||paused)return;const p=player;p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;
+ let dir=(keys.right?1:0)-(keys.left?1:0);if(dir){p.vx+=dir*1700*dt;p.face=dir}else p.vx*=Math.pow(.0008,dt);p.vx=Math.max(-285,Math.min(285,p.vx));
+ if(keys.jump&&p.ground){p.vy=-620;p.ground=false}
+ p.vy=Math.min(850,p.vy+1650*dt);
+ let oldX=p.x,oldY=p.y;p.x+=p.vx*dt;p.x=Math.max(0,Math.min(worldW-p.w,p.x));
+ // Horizontal collision with solid blocks and pipes.
+ const solids=blocks.concat(pipes);
+ for(const b of solids)if(hit(p,b)){if(p.vx>0)p.x=b.x-p.w;else if(p.vx<0)p.x=b.x+b.w;p.vx=0}
+ p.y+=p.vy*dt;p.ground=false;
+ for(const q of platforms.concat(blocks)){
+  if(p.x+p.w>q.x&&p.x<q.x+q.w){
+   if(p.vy>=0&&oldY+p.h<=q.y+8&&p.y+p.h>=q.y){p.y=q.y-p.h;p.vy=0;p.ground=true}
+   else if(p.vy<0&&oldY>=q.y+q.h-5&&p.y<=q.y+q.h){p.y=q.y+q.h;p.vy=0;if(q.kind&&!q.used){q.used=true;if(q.kind==='power'){p.big=true;p.power=8;say('Усиление!')}else{coins++;score+=20;say('+ монета')}ui()}else if(q.type==='brick'){q.broken=true}}
+  }
+ }
+ if(p.y>H+100)hurt();
+ for(const b of blocks)if(b.bump>0)b.bump=Math.max(0,b.bump-dt);
+ for(const o of items)if(!o.got&&Math.abs(p.x+p.w/2-o.x)<27&&Math.abs(p.y+p.h/2-o.y)<35){o.got=true;if(o.type==='star'){score+=100;say('Звезда! +100')}else{coins++;score+=10}ui()}
+ for(const e of enemies)if(e.alive){e.x+=e.v*dt;if(Math.abs(e.x-e.base)>e.range)e.v*=-1;if(hit(p,{x:e.x-14,y:e.y-20,w:28,h:24})){if(p.vy>100&&p.y+p.h<e.y+10){e.alive=false;p.vy=-360;score+=50;ui()}else hurt()}}
+ // Moving platforms
+ for(const q of platforms)if(q.moving){q.y=q.baseY+Math.sin(performance.now()/550+q.phase)*24;if(p.ground&&Math.abs((p.y+p.h)-q.y)<3&&p.x+p.w>q.x&&p.x<q.x+q.w)p.x+=Math.sin(performance.now()/550+q.phase)*24*dt}
+ if(p.x>goal-20)nextRoom();cam=Math.max(0,Math.min(worldW-W,p.x-W*.36));if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)$('toast').style.display='none'}
+}
+function draw(){
+ ctx.clearRect(0,0,W,H);let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,theme.sky[0]);g.addColorStop(1,theme.sky[1]);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<9;i++){let x=((i*360-cam*.32)%(W+420)+W+420)%(W+420)-180;ctx.fillStyle=theme.hill;ctx.beginPath();ctx.moveTo(x,H-65);ctx.lineTo(x+175,H-220-(i%3)*40);ctx.lineTo(x+350,H-65);ctx.fill()}
+ if(room%5!==0){for(let i=0;i<7;i++){let x=((i*310-cam*.2)%(W+300)+W+300)%(W+300)-100;ctx.fillStyle='#ffffff99';ctx.beginPath();ctx.arc(x,90+(i%3)*42,20,0,7);ctx.arc(x+25,85+(i%3)*42,25,0,7);ctx.arc(x+52,95+(i%3)*42,18,0,7);ctx.fill()}}
+ const rect=(x,y,w,h,col)=>{ctx.fillStyle=col;ctx.fillRect(x-cam,y,w,h)};
+ platforms.forEach(q=>{if(q.x+q.w<cam-20||q.x>cam+W+20)return;rect(q.x,q.y,q.w,q.h,theme.ground);rect(q.x,q.y,q.w,7,theme.top);for(let xx=q.x+8;xx<q.x+q.w;xx+=27)rect(xx,q.y+11,12,3,'#ffffff22')});
+ pipes.forEach(q=>{rect(q.x+6,q.y+12,q.w-12,q.h-12,theme.accent);rect(q.x,q.y,q.w,18,theme.accent);rect(q.x+7,q.y+4,7,q.h-8,'#ffffff44')});
+ blocks.forEach(b=>{if(b.broken)return;rect(b.x,b.y-(b.bump?5:0),b.w,b.h,b.used?'#9c8050':'#e99b38');rect(b.x+3,b.y+3-(b.bump?5:0),b.w-6,b.h-6,'#f7c65b');ctx.fillStyle='#70401e';ctx.font='bold 19px Arial';ctx.fillText(b.used?'·':'?',b.x+10-cam,b.y+22-(b.bump?5:0))});
+ items.forEach(o=>{if(o.got)return;let x=o.x-cam;if(x<-20||x>W+20)return;ctx.fillStyle=o.type==='star'?'#ffdf38':'#ffb51b';ctx.beginPath();if(o.type==='star'){for(let j=0;j<10;j++){let a=-Math.PI/2+j*Math.PI/5,r=j%2?7:14;ctx.lineTo(x+Math.cos(a)*r,o.y+Math.sin(a)*r)}}else ctx.arc(x,o.y,10,0,7);ctx.fill()});
+ enemies.forEach(e=>{if(!e.alive)return;let x=e.x-cam;ctx.fillStyle='#9144a8';ctx.beginPath();ctx.roundRect(x-14,e.y-17,28,27,8);ctx.fill();ctx.fillStyle='white';ctx.fillRect(x-7,e.y-9,4,6);ctx.fillRect(x+4,e.y-9,4,6)});
+ // Room gate / finish marker
+ rect(goal,H-150,8,85,'#f7f7f7');ctx.fillStyle='#ffdf46';ctx.beginPath();ctx.moveTo(goal+8-cam,H-150);ctx.lineTo(goal+55-cam,H-135);ctx.lineTo(goal+8-cam,H-120);ctx.fill();
+ if(pPlayerVisible()){rect(player.x,player.y,player.w,player.h,player.big?'#f3bd43':'#e84a3b');rect(player.x+5,player.y+5,20,10,'#ffd1a3');rect(player.x+7,player.y+8,4,4,'#182334');rect(player.x+19,player.y+8,4,4,'#182334');rect(player.x+4,player.y+player.h-5,10,7,'#283b6b');rect(player.x+18,player.y+player.h-5,10,7,'#283b6b')}
+ function pPlayerVisible(){return player.inv<=0||Math.floor(performance.now()/100)%2===0}
+}
+function start(){if(room===1&&$('start').textContent==='ИГРАТЬ СНОВА'){coins=0;score=0;lives=3}running=true;paused=false;$('menu').style.display='none';build();last=performance.now();requestAnimationFrame(loop)}
+function loop(t){if(!running)return;let dt=Math.min((t-last)/1000,.03);last=t;update(dt);draw();requestAnimationFrame(loop)}
+$('start').addEventListener('click',start);$('pause').addEventListener('click',()=>{if(!running)return;paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';if(paused)say('Пауза')});
+document.querySelectorAll('[data-key]').forEach(b=>{const k=b.dataset.key;const set=v=>keys[k]=v;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);set(true)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>set(false)))});
+addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' ','a','d','w','A','D','W'].includes(e.key))e.preventDefault();if(['ArrowLeft','a','A'].includes(e.key))keys.left=true;if(['ArrowRight','d','D'].includes(e.key))keys.right=true;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=true;if(e.key==='Escape'&&running){paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ'}});
 addEventListener('keyup',e=>{if(['ArrowLeft','a','A'].includes(e.key))keys.left=false;if(['ArrowRight','d','D'].includes(e.key))keys.right=false;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=false});
-function rect(x,y,w,h,col){ctx.fillStyle=col;ctx.fillRect(x-camera,y,w,h)}
-function draw(){ctx.clearRect(0,0,W,H);let sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,worldTheme.sky[0]);sky.addColorStop(1,worldTheme.sky[1]);ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
-if(worldTheme.cloud){for(let i=0;i<8;i++){let x=((i*310-camera*.28)%(W+260)+W+260)%(W+260)-120;ctx.fillStyle='#ffffffaa';ctx.beginPath();ctx.arc(x,100+(i%3)*48,24,0,7);ctx.arc(x+28,94+(i%3)*48,30,0,7);ctx.arc(x+58,103+(i%3)*48,21,0,7);ctx.fill()}}
-for(let i=0;i<9;i++){let x=((i*370-camera*.35)%(W+400)+W+400)%(W+400)-160;ctx.fillStyle=worldTheme.hill;ctx.beginPath();ctx.moveTo(x,H-70);ctx.lineTo(x+170,H-230-(i%3)*40);ctx.lineTo(x+340,H-70);ctx.fill()}
-if(!worldTheme.cloud){for(let i=0;i<18;i++){let x=((i*113-camera*.18)%(W+130)+W+130)%(W+130)-50;ctx.fillStyle=worldTheme.name==='Лавовый замок'?'#ff8a45':worldTheme.name==='Ледяные пещеры'?'#d8ffff':'#ffe58a';ctx.globalAlpha=.65;ctx.beginPath();ctx.arc(x,55+(i*47)%Math.max(100,H-140),2+(i%3),0,7);ctx.fill();ctx.globalAlpha=1}}
-pipes.forEach(q=>{let x=q.x-camera;if(x<-80||x>W+80)return;ctx.fillStyle=worldTheme.pipe;ctx.fillRect(x+6,q.y+10,q.w-12,q.h-10);ctx.fillRect(x,q.y,q.w,18);ctx.fillStyle='#ffffff55';ctx.fillRect(x+7,q.y+4,7,q.h-8)});
-platforms.forEach(p=>{if(p.x+p.w<camera-30||p.x>camera+W+30)return;rect(p.x,p.y,p.w,p.h,worldTheme.ground);rect(p.x,p.y,p.w,7,worldTheme.grass);for(let xx=p.x+12;xx<p.x+p.w;xx+=28)rect(xx,p.y+13,12,4,'#bd8250')});
-items.forEach(o=>{if(o.got)return;let x=o.x-camera;if(x<-30||x>W+30)return;ctx.fillStyle=o.type==='star'?'#ffdf38':'#ffb51b';ctx.beginPath();if(o.type==='star'){for(let j=0;j<10;j++){let a=-Math.PI/2+j*Math.PI/5,r=j%2?7:14;ctx.lineTo(x+Math.cos(a)*r,o.y+Math.sin(a)*r)}}else ctx.arc(x,o.y,10,0,7);ctx.fill()});
-enemies.forEach(e=>{if(!e.alive)return;let x=e.x-camera;ctx.fillStyle='#9a4aaf';ctx.beginPath();ctx.roundRect(x-15,e.y-17,30,30,9);ctx.fill();ctx.fillStyle='white';ctx.fillRect(x-8,e.y-8,5,7);ctx.fillRect(x+4,e.y-8,5,7);ctx.fillStyle='#29142e';ctx.fillRect(x-6,e.y+8,12,3)});
-rect(goal,H-160,8,90,'#f4f4f4');rect(goal+8,H-160,48,30,'#ffdf46');ctx.fillStyle='#ffdf46';ctx.beginPath();ctx.moveTo(goal+8-camera,H-160);ctx.lineTo(goal+54-camera,H-145);ctx.lineTo(goal+8-camera,H-130);ctx.fill();
-if(player.inv<=0||Math.floor(performance.now()/100)%2===0){rect(player.x,player.y,player.w,player.h,'#e84a3b');rect(player.x+5,player.y+5,20,10,'#ffd1a3');rect(player.x+7,player.y+8,4,4,'#182334');rect(player.x+19,player.y+8,4,4,'#182334');rect(player.x+4,player.y+player.h-5,10,7,'#283b6b');rect(player.x+18,player.y+player.h-5,10,7,'#283b6b')}
-}
-function update(dt){if(!running||paused)return;let p=player;p.inv=Math.max(0,p.inv-dt);let dir=(keys.right?1:0)-(keys.left?1:0);p.vx=dir*260;if(dir)p.face=dir;if(keys.jump&&p.ground){p.vy=-590;p.ground=false}p.vy+=1500*dt;p.x+=p.vx*dt;p.x=Math.max(0,Math.min(worldW-p.w,p.x));let oldY=p.y;p.y+=p.vy*dt;p.ground=false;
-for(let q of platforms){if(p.x+p.w>q.x&&p.x<q.x+q.w&&oldY+p.h<=q.y+8&&p.y+p.h>=q.y&&p.vy>=0){p.y=q.y-p.h;p.vy=0;p.ground=true}}
-if(p.y>H+120){hurt()}
-for(let o of items){if(!o.got&&Math.abs((p.x+p.w/2)-o.x)<24&&Math.abs((p.y+p.h/2)-o.y)<30){o.got=true;if(o.type==='star')score+=100;else{coins++;score+=10}ui()}}
-for(let e of enemies){if(!e.alive)continue;e.x+=e.v*dt;if(Math.abs(e.x-e.base)>85)e.v*=-1;if(p.x+p.w>e.x-14&&p.x<e.x+14&&p.y+p.h>e.y-16&&p.y<e.y+12){if(p.vy>100&&p.y+p.h<e.y+15){e.alive=false;p.vy=-350;score+=50;ui()}else if(p.inv<=0)hurt()}}
-if(p.x>goal-20){level++;score+=250;ui();build()}
-camera=Math.max(0,Math.min(worldW-W,p.x-W*.35))}
-function hurt(){if(player.inv>0)return;lives--;ui();if(lives<=0){running=false;document.querySelector('#panel h1').innerHTML='ИГРА ОКОНЧЕНА';document.querySelector('#panel p').textContent='Счёт: '+score+' · Монеты: '+coins;document.getElementById('start').textContent='ИГРАТЬ СНОВА';document.getElementById('menu').style.display='grid';coins=0;score=0;lives=3;level=1;ui()}else{player.x=Math.max(20,player.x-100);player.y=H-180;player.vy=0;player.inv=1.5}}
-function loop(t){if(!running)return;let dt=Math.min((t-last)/1000,.033);last=t;update(dt);draw();requestAnimationFrame(loop)}build();draw();ui();
-})();
-</script></body></html>
+build();draw();ui();
+})();</script></body></html>
