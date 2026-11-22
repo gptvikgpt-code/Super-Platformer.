@@ -17,7 +17,7 @@ function netStatus(t){$('netStatus').textContent=t}
 function netSend(data){if(netConn&&netConn.open){try{netConn.send(data)}catch(e){}}}
 function netAttach(conn){
  netConn=conn;
- conn.on('open',()=>{remotePlayer={x:100,y:100,face:1,big:false};netStatus('🟢 Друг подключён! Запускайте игру.');$('netBadge').style.display='block';say('Игрок подключился!')});
+ conn.on('open',()=>{remotePlayer={x:100,y:100,face:1,big:false};netStatus('🟢 Друг подключён! Игра запускается.');$('netBadge').style.display='block';if(!running)start();say('Игрок подключился!')});
  conn.on('data',d=>{if(!d||typeof d!=='object')return;if(d.type==='state'){remotePlayer=d.player;if(Number.isInteger(d.room)&&d.room!==room&&d.room>=1&&d.room<=50){room=d.room;build();say('Переход в комнату '+room)}}});
  conn.on('close',()=>{remotePlayer=null;$('netBadge').style.display='none';netStatus('Соединение с другом прервано')});
  conn.on('error',()=>netStatus('Ошибка соединения. Попробуйте подключиться ещё раз.'));
