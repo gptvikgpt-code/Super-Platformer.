@@ -4,21 +4,21 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14233a;color:#fff;font-family:system-ui,Arial;touch-action:none}canvas{display:block;width:100%;height:100%}#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;font-weight:800;text-shadow:0 2px 3px #123;font-size:clamp(12px,2.4vw,18px)}.pill{background:#101827c9;border:1px solid #ffffff40;border-radius:13px;padding:7px 10px}#menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(#07142699,#071426ed);padding:18px}#panel{max-width:460px;width:100%;text-align:center;background:#14243a;border:1px solid #ffffff35;border-radius:24px;padding:24px;box-shadow:0 20px 70px #0009}h1{font-size:clamp(30px,8vw,46px);line-height:1;margin:0 0 10px;color:#ffe16b}p{line-height:1.45;color:#d7e5f5}button{border:0;border-radius:14px;background:#ffd447;color:#282018;font-weight:900;font-size:17px;padding:12px 20px;cursor:pointer}#controls{position:fixed;bottom:15px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.cluster{display:flex;gap:10px}.ctrl{pointer-events:auto;width:66px;height:66px;border-radius:50%;background:#14243acc;color:white;border:2px solid #ffffff99;font-size:26px;touch-action:none;user-select:none}.ctrl.small{width:52px;height:52px;font-size:19px}#hint{font-size:12px;color:#a9c3dc;margin-top:12px}#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#14243ae8;padding:9px 16px;border-radius:12px;display:none;font-weight:800}@media(min-width:850px){.ctrl{width:58px;height:58px}}
 </style></head><body>
 <canvas id="game"></canvas><div id="hud"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">МИР <span id="world">1</span> · КОМНАТА <span id="room">1</span>/50</div><div class="pill">⭐ <span id="score">0</span> · ❤️ <span id="lives">3</span></div></div><div id="toast"></div>
-<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">Телефон: кнопки снизу · ПК: A/D или ←/→, прыжок — W/↑/Пробел, пауза — Esc</div></div></div>
-<div id="controls"><div class="cluster"><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="right">▶</button></div><div class="cluster"><button class="ctrl small" id="pause">Ⅱ</button><button class="ctrl" data-key="jump">⬆</button></div></div>
+<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">Телефон: кнопки снизу · ПК: A/D или ←/→, прыжок — W/↑/Пробел, вниз в трубу — S/↓, огонь — F/X, пауза — Esc</div></div></div>
+<div id="controls"><div class="cluster"><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="right">▶</button></div><div class="cluster"><button class="ctrl small" id="pause">Ⅱ</button><button class="ctrl small" data-key="down">⬇</button><button class="ctrl" data-key="jump">⬆</button><button class="ctrl small" data-key="shoot">🔥</button></div></div>
 <script>
 (()=>{'use strict';
 const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');let W=innerWidth,H=innerHeight,D=1;
 function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*D;canvas.height=H*D;ctx.setTransform(D,0,0,D,0,0)}addEventListener('resize',resize);resize();
-const $=id=>document.getElementById(id),keys={left:false,right:false,jump:false};
+const $=id=>document.getElementById(id),keys={left:false,right:false,jump:false,down:false,shoot:false};
 const themes=[
 {name:'Зелёные равнины',sky:['#54c7f0','#d9f7ff'],ground:'#94552d',top:'#55bd45',hill:'#5ab987',accent:'#239b50'},
 {name:'Песчаное королевство',sky:['#f4ae54','#ffe8a2'],ground:'#a96835',top:'#e7bd55',hill:'#c48b47',accent:'#39945a'},
 {name:'Ледяные пещеры',sky:['#183b6c','#a6e6f5'],ground:'#557e9d',top:'#c4eff5',hill:'#4c8eae',accent:'#55b9bd'},
 {name:'Сумрачный лес',sky:['#11152f','#49417d'],ground:'#49375f',top:'#70b66d',hill:'#292e5d',accent:'#8a5ac0'},
 {name:'Лавовый замок',sky:['#351b28','#d05232'],ground:'#51414a',top:'#ed683b',hill:'#6a2d3a',accent:'#b74a36'}];
-let room=1,coins=0,score=0,lives=3,cam=0,running=false,paused=false,last=0,worldW=2600,theme=themes[0],platforms=[],blocks=[],items=[],enemies=[],pipes=[],secrets=[],goal=0,toastTimer=0;
-const player={x:60,y:0,w:30,h:42,vx:0,vy:0,ground:false,face:1,inv:0,big:false,power:0};
+let room=1,coins=0,score=0,lives=3,cam=0,running=false,paused=false,last=0,worldW=2600,theme=themes[0],platforms=[],blocks=[],items=[],enemies=[],pipes=[],secrets=[],shots=[],goal=0,toastTimer=0,shootCooldown=0;
+const player={x:60,y:0,w:30,h:42,vx:0,vy:0,ground:false,face:1,inv:0,big:false,power:0,pipeLock:0};
 function randGen(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
 function themeForRoom(n){
  const hue=((n-1)*137.508+18)%360, hue2=(hue+42+((n*17)%55))%360;
@@ -33,13 +33,13 @@ function say(t){const el=$('toast');el.textContent=t;el.style.display='block';to
 function ui(){$('coins').textContent=coins;$('score').textContent=score;$('lives').textContent=lives;$('world').textContent=Math.min(5,Math.ceil(room/10));$('room').textContent=room}
 function build(){
  const rng=randGen(room*7919+37),world=Math.floor((room-1)/10);theme=themeForRoom(room);worldW=2350+((room*73)%7)*145;
- platforms=[{x:0,y:H-65,w:worldW,h:100}];blocks=[];items=[];enemies=[];pipes=[];secrets=[];
+ platforms=[{x:0,y:H-65,w:worldW,h:100}];blocks=[];items=[];enemies=[];pipes=[];secrets=[];shots=[];
  // Ten distinct room patterns per world, with seeded variation in every room.
  let x=130;const count=11+(room%4);
  for(let i=0;i<count;i++){
   x+=125+Math.floor(rng()*95);const row=1+Math.floor(rng()*3),w=72+Math.floor(rng()*95);
   const y=H-112-row*(53+Math.floor(rng()*9));
-  platforms.push({x,y,w,h:17,type:'platform'});
+  platforms.push({x,y,w,h:17,type:(i%4===2?'brick':'platform'),broken:false});
   if(i%3===1||room%5===0)blocks.push({x:x+Math.floor(w/2)-16,y:y-62,w:32,h:30,used:false,kind:rng()>.75?'power':'coin',bump:0});
   if(i%2===0)items.push({x:x+24,y:y-36,type:rng()>.87?'star':'coin',got:false});
   if(i%3===0)enemies.push({x:x+65,y:H-97,base:x+65,range:42+rng()*55,v:(rng()>.5?1:-1)*(65+room*1.5),alive:true});
@@ -54,7 +54,8 @@ function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function hurt(){if(player.inv>0)return;lives--;ui();if(lives<=0){running=false;$('panel').querySelector('h1').innerHTML='ИГРА ОКОНЧЕНА';$('desc').textContent='Счёт: '+score+' · Монеты: '+coins+' · Достигнута комната: '+room;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';coins=0;score=0;lives=3;room=1;ui()}else{player.x=Math.max(0,player.x-100);player.y=H-180;player.vy=0;player.inv=1.6}}
 function nextRoom(){if(room>=50){running=false;$('panel').querySelector('h1').textContent='ПОБЕДА!';$('desc').textContent='Все 50 комнат пройдены! Итоговый счёт: '+score;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';room=1;ui();return}room++;score+=250;build();say('НОВАЯ КОМНАТА '+room+' — НОВАЯ ЦВЕТОВАЯ ТЕМА!')}
 function update(dt){
- if(!running||paused)return;const p=player;p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;
+ if(!running||paused)return;const p=player;p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;p.pipeLock=Math.max(0,p.pipeLock-dt);shootCooldown=Math.max(0,shootCooldown-dt);
+ if(keys.shoot&&shootCooldown<=0){shots.push({x:p.x+p.w/2+p.face*18,y:p.y+p.h*.55,vx:p.face*520,life:2});shootCooldown=.32}
  let dir=(keys.right?1:0)-(keys.left?1:0);if(dir){p.vx+=dir*1700*dt;p.face=dir}else p.vx*=Math.pow(.0008,dt);p.vx=Math.max(-285,Math.min(285,p.vx));
  if(keys.jump&&p.ground){p.vy=-620;p.ground=false}
  p.vy=Math.min(850,p.vy+1650*dt);
@@ -64,13 +65,17 @@ function update(dt){
  for(const b of solids)if(hit(p,b)){if(p.vx>0)p.x=b.x-p.w;else if(p.vx<0)p.x=b.x+b.w;p.vx=0}
  p.y+=p.vy*dt;p.ground=false;
  for(const q of platforms.concat(blocks)){
+  if(q.broken)continue;
   if(p.x+p.w>q.x&&p.x<q.x+q.w){
    if(p.vy>=0&&oldY+p.h<=q.y+8&&p.y+p.h>=q.y){p.y=q.y-p.h;p.vy=0;p.ground=true}
-   else if(p.vy<0&&oldY>=q.y+q.h-5&&p.y<=q.y+q.h){p.y=q.y+q.h;p.vy=0;if(q.kind&&!q.used){q.used=true;if(q.kind==='power'){p.big=true;p.power=8;say('Усиление!')}else{coins++;score+=20;say('+ монета')}ui()}else if(q.type==='brick'){q.broken=true}}
+   else if(p.vy<0&&oldY>=q.y+q.h-5&&p.y<=q.y+q.h){p.y=q.y+q.h;p.vy=0;if(q.kind&&!q.used){q.used=true;if(q.kind==='power'){p.big=true;p.power=8;say('Усиление!')}else{coins++;score+=20;say('+ монета')}ui()}else if(q.type==='brick'){q.broken=true;score+=15;say('Кирпич разбит!');ui()}}
   }
  }
+ // Pipe tops act as platforms. Press DOWN while standing on one to travel to the next pipe.
+ for(const pipe of pipes){if(p.x+p.w>pipe.x+4&&p.x<pipe.x+pipe.w-4&&p.vy>=0&&oldY+p.h<=pipe.y+8&&p.y+p.h>=pipe.y){p.y=pipe.y-p.h;p.vy=0;p.ground=true;if(keys.down&&p.pipeLock<=0&&pipes.length>1){const idx=pipes.indexOf(pipe),dest=pipes[(idx+1)%pipes.length];p.x=dest.x+dest.w/2-p.w/2;p.y=dest.y-p.h-2;p.vx=0;p.pipeLock=.8;say('Проход по трубе!');break}}}
  if(p.y>H+100)hurt();
  for(const b of blocks)if(b.bump>0)b.bump=Math.max(0,b.bump-dt);
+ for(const shot of shots){shot.x+=shot.vx*dt;shot.life-=dt;for(const e of enemies){if(e.alive&&hit({x:shot.x-7,y:shot.y-7,w:14,h:14},{x:e.x-14,y:e.y-20,w:28,h:24})){e.alive=false;shot.life=0;score+=50;ui();break}}}shots=shots.filter(z=>z.life>0&&z.x>0&&z.x<worldW);
  for(const o of items)if(!o.got&&Math.abs(p.x+p.w/2-o.x)<27&&Math.abs(p.y+p.h/2-o.y)<35){o.got=true;if(o.type==='star'){score+=100;say('Звезда! +100')}else{coins++;score+=10}ui()}
  for(const e of enemies)if(e.alive){e.x+=e.v*dt;if(Math.abs(e.x-e.base)>e.range)e.v*=-1;if(hit(p,{x:e.x-14,y:e.y-20,w:28,h:24})){if(p.vy>100&&p.y+p.h<e.y+10){e.alive=false;p.vy=-360;score+=50;ui()}else hurt()}}
  // Moving platforms
@@ -82,9 +87,10 @@ function draw(){
  for(let i=0;i<9;i++){let x=((i*360-cam*.32)%(W+420)+W+420)%(W+420)-180;ctx.fillStyle=theme.hill;ctx.beginPath();ctx.moveTo(x,H-65);ctx.lineTo(x+175,H-220-(i%3)*40);ctx.lineTo(x+350,H-65);ctx.fill()}
  if(room%5!==0){for(let i=0;i<7;i++){let x=((i*310-cam*.2)%(W+300)+W+300)%(W+300)-100;ctx.fillStyle='#ffffff99';ctx.beginPath();ctx.arc(x,90+(i%3)*42,20,0,7);ctx.arc(x+25,85+(i%3)*42,25,0,7);ctx.arc(x+52,95+(i%3)*42,18,0,7);ctx.fill()}}
  const rect=(x,y,w,h,col)=>{ctx.fillStyle=col;ctx.fillRect(x-cam,y,w,h)};
- platforms.forEach(q=>{if(q.x+q.w<cam-20||q.x>cam+W+20)return;rect(q.x,q.y,q.w,q.h,theme.ground);rect(q.x,q.y,q.w,7,theme.top);for(let xx=q.x+8;xx<q.x+q.w;xx+=27)rect(xx,q.y+11,12,3,'#ffffff22')});
+ platforms.forEach(q=>{if(q.broken||q.x+q.w<cam-20||q.x>cam+W+20)return;rect(q.x,q.y,q.w,q.h,q.type==='brick'?'#b96b36':theme.ground);rect(q.x,q.y,q.w,7,q.type==='brick'?'#e6a04a':theme.top);for(let xx=q.x+8;xx<q.x+q.w;xx+=27)rect(xx,q.y+11,12,3,'#ffffff22');if(q.type==='brick'){ctx.strokeStyle='#6d3925';ctx.strokeRect(q.x-cam,q.y,q.w,q.h)}});
  pipes.forEach(q=>{rect(q.x+6,q.y+12,q.w-12,q.h-12,theme.accent);rect(q.x,q.y,q.w,18,theme.accent);rect(q.x+7,q.y+4,7,q.h-8,'#ffffff44')});
  blocks.forEach(b=>{if(b.broken)return;rect(b.x,b.y-(b.bump?5:0),b.w,b.h,b.used?'#9c8050':'#e99b38');rect(b.x+3,b.y+3-(b.bump?5:0),b.w-6,b.h-6,'#f7c65b');ctx.fillStyle='#70401e';ctx.font='bold 19px Arial';ctx.fillText(b.used?'·':'?',b.x+10-cam,b.y+22-(b.bump?5:0))});
+ shots.forEach(z=>{ctx.fillStyle='#ff6a24';ctx.beginPath();ctx.arc(z.x-cam,z.y,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd54a';ctx.beginPath();ctx.arc(z.x-cam-2,z.y-2,3,0,Math.PI*2);ctx.fill()});
  items.forEach(o=>{if(o.got)return;let x=o.x-cam;if(x<-20||x>W+20)return;ctx.fillStyle=o.type==='star'?'#ffdf38':'#ffb51b';ctx.beginPath();if(o.type==='star'){for(let j=0;j<10;j++){let a=-Math.PI/2+j*Math.PI/5,r=j%2?7:14;ctx.lineTo(x+Math.cos(a)*r,o.y+Math.sin(a)*r)}}else ctx.arc(x,o.y,10,0,7);ctx.fill()});
  enemies.forEach(e=>{if(!e.alive)return;let x=e.x-cam;ctx.fillStyle='#9144a8';ctx.beginPath();ctx.roundRect(x-14,e.y-17,28,27,8);ctx.fill();ctx.fillStyle='white';ctx.fillRect(x-7,e.y-9,4,6);ctx.fillRect(x+4,e.y-9,4,6)});
  // Room gate / finish marker
@@ -96,7 +102,7 @@ function start(){if(room===1&&$('start').textContent==='ИГРАТЬ СНОВА'
 function loop(t){if(!running)return;let dt=Math.min((t-last)/1000,.03);last=t;update(dt);draw();requestAnimationFrame(loop)}
 $('start').addEventListener('click',start);$('pause').addEventListener('click',()=>{if(!running)return;paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';if(paused)say('Пауза')});
 document.querySelectorAll('[data-key]').forEach(b=>{const k=b.dataset.key;const set=v=>keys[k]=v;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);set(true)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>set(false)))});
-addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' ','a','d','w','A','D','W'].includes(e.key))e.preventDefault();if(['ArrowLeft','a','A'].includes(e.key))keys.left=true;if(['ArrowRight','d','D'].includes(e.key))keys.right=true;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=true;if(e.key==='Escape'&&running){paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ'}});
-addEventListener('keyup',e=>{if(['ArrowLeft','a','A'].includes(e.key))keys.left=false;if(['ArrowRight','d','D'].includes(e.key))keys.right=false;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=false});
+addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','a','d','w','s','A','D','W','S','f','F','x','X'].includes(e.key))e.preventDefault();if(['ArrowLeft','a','A'].includes(e.key))keys.left=true;if(['ArrowRight','d','D'].includes(e.key))keys.right=true;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=true;if(['ArrowDown','s','S'].includes(e.key))keys.down=true;if(['f','F','x','X'].includes(e.key))keys.shoot=true;if(e.key==='Escape'&&running){paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ'}});
+addEventListener('keyup',e=>{if(['ArrowLeft','a','A'].includes(e.key))keys.left=false;if(['ArrowRight','d','D'].includes(e.key))keys.right=false;if(['ArrowUp','w','W',' '].includes(e.key))keys.jump=false;if(['ArrowDown','s','S'].includes(e.key))keys.down=false;if(['f','F','x','X'].includes(e.key))keys.shoot=false});
 build();draw();ui();
 })();</script></body></html>
