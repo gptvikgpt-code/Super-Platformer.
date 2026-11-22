@@ -85,7 +85,7 @@ function hurt(){if(player.inv>0)return;lives--;ui();if(lives<=0){running=false;$
 function nextRoom(){if(room>=50){running=false;$('panel').querySelector('h1').textContent='ПОБЕДА!';$('desc').textContent='Все 50 комнат пройдены! Итоговый счёт: '+score;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';room=1;ui();return}room++;score+=250;build();say('НОВАЯ КОМНАТА '+room+' — НОВАЯ ЦВЕТОВАЯ ТЕМА!')}
 function update(dt){
  if(!running||paused)return;const p=player;netClock+=dt;if(netClock>.10){netClock=0;netSend({type:'state',room,player:{x:p.x,y:p.y,face:p.face,big:p.big}})}p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;p.pipeLock=Math.max(0,p.pipeLock-dt);shootCooldown=Math.max(0,shootCooldown-dt);
- if(keys.shoot&&shootCooldown<=0){shots.push({x:p.x+p.w/2+p.face*18,y:p.y+p.h*.55,vx:p.face*520,life:2});shootCooldown=.32}
+ if(keys.shoot&&shootCooldown<=0){const sx=p.x+p.w/2+p.face*18,sy=p.y+p.h*.38;let target=null,dist=Infinity;for(const e of enemies){if(!e.alive)continue;const dx=(e.x-p.x)*p.face;if(dx>0&&dx<dist){dist=dx;target=e}}const targetY=target?target.y-5:sy;shots.push({x:sx,y:sy,vx:p.face*520,vy:Math.max(-260,Math.min(260,(targetY-sy)*1.8)),life:2});shootCooldown=.32}
  let dir=(keys.right?1:0)-(keys.left?1:0);if(dir){p.vx+=dir*1700*dt;p.face=dir}else p.vx*=Math.pow(.0008,dt);p.vx=Math.max(-285,Math.min(285,p.vx));
  if(keys.jump&&p.ground){p.vy=-620;p.ground=false}
  p.vy=Math.min(850,p.vy+1650*dt);
@@ -125,7 +125,7 @@ function update(dt){
  if(pipeAnim>0)return;
  if(p.y>H+100)hurt();
  for(const b of blocks)if(b.bump>0)b.bump=Math.max(0,b.bump-dt);
- for(const shot of shots){shot.x+=shot.vx*dt;shot.life-=dt;for(const e of enemies){if(e.alive&&hit({x:shot.x-7,y:shot.y-7,w:14,h:14},{x:e.x-14,y:e.y-20,w:28,h:24})){e.alive=false;shot.life=0;score+=50;ui();break}}}shots=shots.filter(z=>z.life>0&&z.x>0&&z.x<worldW);
+ for(const shot of shots){shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;for(const e of enemies){if(e.alive&&hit({x:shot.x-11,y:shot.y-11,w:22,h:22},{x:e.x-18,y:e.y-23,w:36,h:32})){e.alive=false;shot.life=0;score+=50;ui();break}}}shots=shots.filter(z=>z.life>0&&z.x>0&&z.x<worldW);
  for(const o of items)if(!o.got&&Math.abs(p.x+p.w/2-o.x)<27&&Math.abs(p.y+p.h/2-o.y)<35){o.got=true;if(o.type==='star'){score+=100;say('Звезда! +100')}else{coins++;score+=10}ui()}
  for(const e of enemies)if(e.alive){e.x+=e.v*dt;if(Math.abs(e.x-e.base)>e.range)e.v*=-1;if(hit(p,{x:e.x-14,y:e.y-20,w:28,h:24})){if(p.vy>100&&p.y+p.h<e.y+10){e.alive=false;p.vy=-360;score+=50;ui()}else hurt()}}
  // Moving platforms
