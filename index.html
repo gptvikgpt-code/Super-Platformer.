@@ -4,7 +4,7 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14233a;color:#fff;font-family:system-ui,Arial;touch-action:none}canvas{display:block;width:100%;height:100%}#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;font-weight:800;text-shadow:0 2px 3px #123;font-size:clamp(12px,2.4vw,18px)}.pill{background:#101827c9;border:1px solid #ffffff40;border-radius:13px;padding:7px 10px}#menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(#07142699,#071426ed);padding:18px}#panel{max-width:460px;width:100%;text-align:center;background:#14243a;border:1px solid #ffffff35;border-radius:24px;padding:24px;box-shadow:0 20px 70px #0009}h1{font-size:clamp(30px,8vw,46px);line-height:1;margin:0 0 10px;color:#ffe16b}p{line-height:1.45;color:#d7e5f5}button{border:0;border-radius:14px;background:#ffd447;color:#282018;font-weight:900;font-size:17px;padding:12px 20px;cursor:pointer}#controls{position:fixed;bottom:15px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.cluster{display:flex;gap:10px}.ctrl{pointer-events:auto;width:66px;height:66px;border-radius:50%;background:#14243acc;color:white;border:2px solid #ffffff99;font-size:26px;touch-action:none;user-select:none}.ctrl.small{width:52px;height:52px;font-size:19px}#hint{font-size:12px;color:#a9c3dc;margin-top:12px}#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#14243ae8;padding:9px 16px;border-radius:12px;display:none;font-weight:800}@media(min-width:850px){.ctrl{width:58px;height:58px}}
 </style></head><body>
 <canvas id="game"></canvas><div id="hud"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">МИР <span id="world">1</span> · КОМНАТА <span id="room">1</span>/50</div><div class="pill">⭐ <span id="score">0</span> · ❤️ <span id="lives">3</span></div></div><div id="toast"></div>
-<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">Телефон: кнопки снизу · ПК: A/D или ←/→, прыжок — W/↑/Пробел, вниз в трубу — S/↓, огонь — F/X, пауза — Esc</div></div></div>
+<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">Прыжок под кирпичом — разбить его · На трубе нажми ⬇ чтобы нырнуть · 🔥 или F — огонь</div></div></div>
 <div id="controls"><div class="cluster"><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="right">▶</button></div><div class="cluster"><button class="ctrl small" id="pause">Ⅱ</button><button class="ctrl small" data-key="down">⬇</button><button class="ctrl" data-key="jump">⬆</button><button class="ctrl small" data-key="shoot">🔥</button></div></div>
 <script>
 (()=>{'use strict';
@@ -17,7 +17,7 @@ const themes=[
 {name:'Ледяные пещеры',sky:['#183b6c','#a6e6f5'],ground:'#557e9d',top:'#c4eff5',hill:'#4c8eae',accent:'#55b9bd'},
 {name:'Сумрачный лес',sky:['#11152f','#49417d'],ground:'#49375f',top:'#70b66d',hill:'#292e5d',accent:'#8a5ac0'},
 {name:'Лавовый замок',sky:['#351b28','#d05232'],ground:'#51414a',top:'#ed683b',hill:'#6a2d3a',accent:'#b74a36'}];
-let room=1,coins=0,score=0,lives=3,cam=0,running=false,paused=false,last=0,worldW=2600,theme=themes[0],platforms=[],blocks=[],items=[],enemies=[],pipes=[],secrets=[],shots=[],goal=0,toastTimer=0,shootCooldown=0;
+let room=1,coins=0,score=0,lives=3,cam=0,running=false,paused=false,last=0,worldW=2600,theme=themes[0],platforms=[],blocks=[],items=[],enemies=[],pipes=[],secrets=[],shots=[],goal=0,toastTimer=0,shootCooldown=0,pipeAnim=0,pipeDest=null;
 const player={x:60,y:0,w:30,h:42,vx:0,vy:0,ground:false,face:1,inv:0,big:false,power:0,pipeLock:0};
 function randGen(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
 function themeForRoom(n){
@@ -67,12 +67,32 @@ function update(dt){
  for(const q of platforms.concat(blocks)){
   if(q.broken)continue;
   if(p.x+p.w>q.x&&p.x<q.x+q.w){
-   if(p.vy>=0&&oldY+p.h<=q.y+8&&p.y+p.h>=q.y){p.y=q.y-p.h;p.vy=0;p.ground=true}
-   else if(p.vy<0&&oldY>=q.y+q.h-5&&p.y<=q.y+q.h){p.y=q.y+q.h;p.vy=0;if(q.kind&&!q.used){q.used=true;if(q.kind==='power'){p.big=true;p.power=8;say('Усиление!')}else{coins++;score+=20;say('+ монета')}ui()}else if(q.type==='brick'){q.broken=true;score+=15;say('Кирпич разбит!');ui()}}
+   // Landing on top.
+   if(p.vy>=0&&oldY+p.h<=q.y+10&&p.y+p.h>=q.y){p.y=q.y-p.h;p.vy=0;p.ground=true}
+   // A rising player hits the underside: brick platforms shatter, bonus blocks bump.
+   else if(p.vy<0&&oldY>=q.y+q.h-8&&p.y<=q.y+q.h){
+    p.y=q.y+q.h;p.vy=35;
+    if(q.type==='brick'||q.breakable){q.broken=true;score+=25;say('💥 БЛОК РАЗБИТ!');ui()}
+    else if(q.kind&&!q.used){q.used=true;q.bump=.16;if(q.kind==='power'){p.big=true;p.power=8;say('Усиление!')}else{coins++;score+=20;say('+ монета')}ui()}
+   }
   }
  }
- // Pipe tops act as platforms. Press DOWN while standing on one to travel to the next pipe.
- for(const pipe of pipes){if(p.x+p.w>pipe.x+4&&p.x<pipe.x+pipe.w-4&&p.vy>=0&&oldY+p.h<=pipe.y+8&&p.y+p.h>=pipe.y){p.y=pipe.y-p.h;p.vy=0;p.ground=true;if(keys.down&&p.pipeLock<=0&&pipes.length>1){const idx=pipes.indexOf(pipe),dest=pipes[(idx+1)%pipes.length];p.x=dest.x+dest.w/2-p.w/2;p.y=dest.y-p.h-2;p.vx=0;p.pipeLock=.8;say('Проход по трубе!');break}}}
+ // Pipes are enterable: stand on a pipe and press DOWN to dive inside.
+ if(pipeAnim>0){
+  pipeAnim-=dt;
+  if(pipeAnim<=0&&pipeDest){p.x=pipeDest.x+pipeDest.w/2-p.w/2;p.y=pipeDest.y-p.h-2;p.vx=0;p.vy=0;p.pipeLock=.75;p.ground=true;pipeDest=null;say('Выход из трубы!')}
+  return;
+ }
+ for(const pipe of pipes){
+  if(p.x+p.w>pipe.x+4&&p.x<pipe.x+pipe.w-4&&p.vy>=0&&oldY+p.h<=pipe.y+10&&p.y+p.h>=pipe.y){
+   p.y=pipe.y-p.h;p.vy=0;p.ground=true;
+  }
+  if(keys.down&&p.ground&&p.pipeLock<=0&&p.x+p.w>pipe.x+5&&p.x<pipe.x+pipe.w-5&&Math.abs((p.y+p.h)-pipe.y)<5&&pipes.length>1){
+   const idx=pipes.indexOf(pipe);pipeDest=pipes[(idx+1)%pipes.length];
+   p.x=pipe.x+pipe.w/2-p.w/2;p.y=pipe.y+pipe.h-14;p.vx=0;p.vy=0;p.ground=false;pipeAnim=.34;say('Ныряем в трубу…');break;
+  }
+ }
+ if(pipeAnim>0)return;
  if(p.y>H+100)hurt();
  for(const b of blocks)if(b.bump>0)b.bump=Math.max(0,b.bump-dt);
  for(const shot of shots){shot.x+=shot.vx*dt;shot.life-=dt;for(const e of enemies){if(e.alive&&hit({x:shot.x-7,y:shot.y-7,w:14,h:14},{x:e.x-14,y:e.y-20,w:28,h:24})){e.alive=false;shot.life=0;score+=50;ui();break}}}shots=shots.filter(z=>z.life>0&&z.x>0&&z.x<worldW);
@@ -95,7 +115,7 @@ function draw(){
  enemies.forEach(e=>{if(!e.alive)return;let x=e.x-cam;ctx.fillStyle='#9144a8';ctx.beginPath();ctx.roundRect(x-14,e.y-17,28,27,8);ctx.fill();ctx.fillStyle='white';ctx.fillRect(x-7,e.y-9,4,6);ctx.fillRect(x+4,e.y-9,4,6)});
  // Room gate / finish marker
  rect(goal,H-150,8,85,'#f7f7f7');ctx.fillStyle='#ffdf46';ctx.beginPath();ctx.moveTo(goal+8-cam,H-150);ctx.lineTo(goal+55-cam,H-135);ctx.lineTo(goal+8-cam,H-120);ctx.fill();
- if(pPlayerVisible()){rect(player.x,player.y,player.w,player.h,player.big?'#f3bd43':'#e84a3b');rect(player.x+5,player.y+5,20,10,'#ffd1a3');rect(player.x+7,player.y+8,4,4,'#182334');rect(player.x+19,player.y+8,4,4,'#182334');rect(player.x+4,player.y+player.h-5,10,7,'#283b6b');rect(player.x+18,player.y+player.h-5,10,7,'#283b6b')}
+ if(pPlayerVisible()&&pipeAnim<=0){rect(player.x,player.y,player.w,player.h,player.big?'#f3bd43':'#e84a3b');rect(player.x+5,player.y+5,20,10,'#ffd1a3');rect(player.x+7,player.y+8,4,4,'#182334');rect(player.x+19,player.y+8,4,4,'#182334');rect(player.x+4,player.y+player.h-5,10,7,'#283b6b');rect(player.x+18,player.y+player.h-5,10,7,'#283b6b')}
  function pPlayerVisible(){return player.inv<=0||Math.floor(performance.now()/100)%2===0}
 }
 function start(){if(room===1&&$('start').textContent==='ИГРАТЬ СНОВА'){coins=0;score=0;lives=3}running=true;paused=false;$('menu').style.display='none';build();last=performance.now();requestAnimationFrame(loop)}
