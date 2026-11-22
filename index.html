@@ -14,7 +14,9 @@ const $=id=>document.getElementById(id),keys={left:false,right:false,jump:false,
 
 let netPeer=null,netConn=null,netRole='',netCode='',remotePlayer=null,netClock=0;
 function netStatus(t){$('netStatus').textContent=t}
-function netSend(data){if(netConn&&netConn.open){try{netConn.send(data)}catch(e){}}}\nfunction netEnemyDead(id){if(Number.isInteger(id))netSend({type:'enemyDead',id})}\nfunction netItemGot(id){if(Number.isInteger(id))netSend({type:'itemGot',id})}
+function netSend(data){if(netConn&&netConn.open){try{netConn.send(data)}catch(e){}}}
+function netEnemyDead(id){if(Number.isInteger(id))netSend({type:'enemyDead',id})}
+function netItemGot(id){if(Number.isInteger(id))netSend({type:'itemGot',id})}
 function netAttach(conn){
  netConn=conn;
  conn.on('open',()=>{remotePlayer={x:100,y:100,face:1,big:false};netStatus('🟢 Друг подключён! Игра запускается.');$('netBadge').style.display='block';if(!running)start();say('Игрок подключился!')});
