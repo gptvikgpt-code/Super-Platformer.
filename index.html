@@ -1,16 +1,46 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#14233a"><title>Super Platformer — 50 комнат</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14233a;color:#fff;font-family:system-ui,Arial;touch-action:none}canvas{display:block;width:100%;height:100%}#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;font-weight:800;text-shadow:0 2px 3px #123;font-size:clamp(12px,2.4vw,18px)}.pill{background:#101827c9;border:1px solid #ffffff40;border-radius:13px;padding:7px 10px}#menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(#07142699,#071426ed);padding:18px}#panel{max-width:460px;width:100%;text-align:center;background:#14243a;border:1px solid #ffffff35;border-radius:24px;padding:24px;box-shadow:0 20px 70px #0009}h1{font-size:clamp(30px,8vw,46px);line-height:1;margin:0 0 10px;color:#ffe16b}p{line-height:1.45;color:#d7e5f5}button{border:0;border-radius:14px;background:#ffd447;color:#282018;font-weight:900;font-size:17px;padding:12px 20px;cursor:pointer}#controls{position:fixed;bottom:15px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.cluster{display:flex;gap:10px}.ctrl{pointer-events:auto;width:66px;height:66px;border-radius:50%;background:#14243acc;color:white;border:2px solid #ffffff99;font-size:26px;touch-action:none;user-select:none}.ctrl.small{width:52px;height:52px;font-size:19px}#hint{font-size:12px;color:#a9c3dc;margin-top:12px}#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#14243ae8;padding:9px 16px;border-radius:12px;display:none;font-weight:800}@media(min-width:850px){.ctrl{width:58px;height:58px}}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14233a;color:#fff;font-family:system-ui,Arial;touch-action:none}canvas{display:block;width:100%;height:100%}#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;font-weight:800;text-shadow:0 2px 3px #123;font-size:clamp(12px,2.4vw,18px)}.pill{background:#101827c9;border:1px solid #ffffff40;border-radius:13px;padding:7px 10px}#menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(#07142699,#071426ed);padding:18px}#panel{max-width:460px;width:100%;text-align:center;background:#14243a;border:1px solid #ffffff35;border-radius:24px;padding:24px;box-shadow:0 20px 70px #0009}h1{font-size:clamp(30px,8vw,46px);line-height:1;margin:0 0 10px;color:#ffe16b}p{line-height:1.45;color:#d7e5f5}button{border:0;border-radius:14px;background:#ffd447;color:#282018;font-weight:900;font-size:17px;padding:12px 20px;cursor:pointer}#controls{position:fixed;bottom:15px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.cluster{display:flex;gap:10px}.ctrl{pointer-events:auto;width:66px;height:66px;border-radius:50%;background:#14243acc;color:white;border:2px solid #ffffff99;font-size:26px;touch-action:none;user-select:none}.ctrl.small{width:52px;height:52px;font-size:19px}#hint{font-size:12px;color:#a9c3dc;margin-top:12px}#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#14243ae8;padding:9px 16px;border-radius:12px;display:none;font-weight:800}#online{margin-top:18px;padding-top:14px;border-top:1px solid #ffffff30}#online input{width:130px;max-width:45%;padding:12px;border-radius:12px;border:1px solid #ffffff55;background:#0b1728;color:white;font-size:18px;text-align:center;letter-spacing:3px}#online button{font-size:14px;padding:11px 13px;margin:4px}#netStatus{font-size:13px;color:#b9d5ed;margin:8px 0}#netBadge{position:fixed;top:58px;left:10px;background:#101827d9;border:1px solid #ffffff40;border-radius:10px;padding:6px 9px;font-size:12px;font-weight:800;display:none;z-index:4}@media(min-width:850px){.ctrl{width:58px;height:58px}}
 </style></head><body>
-<canvas id="game"></canvas><div id="hud"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">МИР <span id="world">1</span> · КОМНАТА <span id="room">1</span>/50</div><div class="pill">⭐ <span id="score">0</span> · ❤️ <span id="lives">3</span></div></div><div id="toast"></div>
-<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">💥 Все платформы можно разбить ударом головой снизу · ⬇ на трубе — нырнуть · 🔥 — огонь</div></div></div>
+<canvas id="game"></canvas><div id="hud"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">МИР <span id="world">1</span> · КОМНАТА <span id="room">1</span>/50</div><div class="pill">⭐ <span id="score">0</span> · ❤️ <span id="lives">3</span></div></div><div id="toast"></div><div id="netBadge">🌐 Друг подключён</div>
+<div id="menu"><div id="panel"><h1>SUPER<br>PLATFORMER</h1><p id="desc">50 разных комнат в пяти мирах. Прыгай по платформам, разбивай блоки, собирай монеты и усиления, побеждай врагов и находи секреты.</p><button id="start">НАЧАТЬ ИГРУ</button><div id="hint">💥 Все платформы можно разбить ударом головой снизу · ⬇ на трубе — нырнуть · 🔥 — огонь</div><div id="online"><b>🌐 ИГРА С ДРУГОМ</b><div id="netStatus">Создай комнату или введи код друга</div><button id="createRoom">СОЗДАТЬ КОМНАТУ</button><div style="margin:8px 0"><input id="joinCode" inputmode="numeric" maxlength="6" placeholder="6 цифр"><button id="joinRoom">ПОДКЛЮЧИТЬСЯ</button></div><div id="myCode" style="font-size:14px;color:#ffe16b;font-weight:900"></div></div></div></div>
 <div id="controls"><div class="cluster"><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="right">▶</button></div><div class="cluster"><button class="ctrl small" id="pause">Ⅱ</button><button class="ctrl small" data-key="down">⬇</button><button class="ctrl" data-key="jump">⬆</button><button class="ctrl small" data-key="shoot">🔥</button></div></div>
-<script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script><script>
 (()=>{'use strict';
 const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');let W=innerWidth,H=innerHeight,D=1;
 function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*D;canvas.height=H*D;ctx.setTransform(D,0,0,D,0,0)}addEventListener('resize',resize);resize();
 const $=id=>document.getElementById(id),keys={left:false,right:false,jump:false,down:false,shoot:false};
+
+let netPeer=null,netConn=null,netRole='',netCode='',remotePlayer=null,netClock=0;
+function netStatus(t){$('netStatus').textContent=t}
+function netSend(data){if(netConn&&netConn.open){try{netConn.send(data)}catch(e){}}}
+function netAttach(conn){
+ netConn=conn;
+ conn.on('open',()=>{remotePlayer={x:100,y:100,face:1,big:false};netStatus('🟢 Друг подключён! Запускайте игру.');$('netBadge').style.display='block';say('Игрок подключился!')});
+ conn.on('data',d=>{if(!d||typeof d!=='object')return;if(d.type==='state'){remotePlayer=d.player;if(Number.isInteger(d.room)&&d.room!==room&&d.room>=1&&d.room<=50){room=d.room;build();say('Переход в комнату '+room)}}});
+ conn.on('close',()=>{remotePlayer=null;$('netBadge').style.display='none';netStatus('Соединение с другом прервано')});
+ conn.on('error',()=>netStatus('Ошибка соединения. Попробуйте подключиться ещё раз.'));
+}
+function netCreate(){
+ if(typeof Peer==='undefined'){netStatus('Не загрузился сетевой модуль. Проверь интернет и обнови страницу.');return}
+ if(netPeer)netPeer.destroy();netRole='host';netCode=String(Math.floor(100000+Math.random()*900000));netStatus('Создаю комнату…');$('myCode').textContent='';
+ netPeer=new Peer('mario'+netCode,{host:'0.peerjs.com',port:443,path:'/',secure:true});
+ netPeer.on('open',()=>{$('myCode').textContent='ТВОЙ КОД: '+netCode;netStatus('Ждём друга. Отправь ему шестизначный код.')});
+ netPeer.on('connection',conn=>netAttach(conn));
+ netPeer.on('error',e=>netStatus(e.type==='unavailable-id'?'Код занят, создай комнату ещё раз.':'Сетевая ошибка: '+e.type));
+}
+function netJoin(){
+ if(typeof Peer==='undefined'){netStatus('Не загрузился сетевой модуль. Проверь интернет и обнови страницу.');return}
+ const code=$('joinCode').value.replace(/\D/g,'');if(!/^\d{6}$/.test(code)){netStatus('Введи ровно 6 цифр.');return}
+ if(netPeer)netPeer.destroy();netRole='guest';netCode=code;netStatus('Подключаюсь к комнате '+code+'…');
+ netPeer=new Peer(undefined,{host:'0.peerjs.com',port:443,path:'/',secure:true});
+ netPeer.on('open',()=>netAttach(netPeer.connect('mario'+code,{reliable:true})));
+ netPeer.on('error',e=>netStatus('Не удалось подключиться: '+e.type+'. Проверь код и попробуй снова.'));
+}
+$('createRoom').addEventListener('click',netCreate);$('joinRoom').addEventListener('click',netJoin);
+$('joinCode').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,6)});
+
 const themes=[
 {name:'Зелёные равнины',sky:['#54c7f0','#d9f7ff'],ground:'#94552d',top:'#55bd45',hill:'#5ab987',accent:'#239b50'},
 {name:'Песчаное королевство',sky:['#f4ae54','#ffe8a2'],ground:'#a96835',top:'#e7bd55',hill:'#c48b47',accent:'#39945a'},
@@ -54,7 +84,7 @@ function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function hurt(){if(player.inv>0)return;lives--;ui();if(lives<=0){running=false;$('panel').querySelector('h1').innerHTML='ИГРА ОКОНЧЕНА';$('desc').textContent='Счёт: '+score+' · Монеты: '+coins+' · Достигнута комната: '+room;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';coins=0;score=0;lives=3;room=1;ui()}else{player.x=Math.max(0,player.x-100);player.y=H-180;player.vy=0;player.inv=1.6}}
 function nextRoom(){if(room>=50){running=false;$('panel').querySelector('h1').textContent='ПОБЕДА!';$('desc').textContent='Все 50 комнат пройдены! Итоговый счёт: '+score;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';room=1;ui();return}room++;score+=250;build();say('НОВАЯ КОМНАТА '+room+' — НОВАЯ ЦВЕТОВАЯ ТЕМА!')}
 function update(dt){
- if(!running||paused)return;const p=player;p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;p.pipeLock=Math.max(0,p.pipeLock-dt);shootCooldown=Math.max(0,shootCooldown-dt);
+ if(!running||paused)return;const p=player;netClock+=dt;if(netClock>.10){netClock=0;netSend({type:'state',room,player:{x:p.x,y:p.y,face:p.face,big:p.big}})}p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;p.pipeLock=Math.max(0,p.pipeLock-dt);shootCooldown=Math.max(0,shootCooldown-dt);
  if(keys.shoot&&shootCooldown<=0){shots.push({x:p.x+p.w/2+p.face*18,y:p.y+p.h*.55,vx:p.face*520,life:2});shootCooldown=.32}
  let dir=(keys.right?1:0)-(keys.left?1:0);if(dir){p.vx+=dir*1700*dt;p.face=dir}else p.vx*=Math.pow(.0008,dt);p.vx=Math.max(-285,Math.min(285,p.vx));
  if(keys.jump&&p.ground){p.vy=-620;p.ground=false}
@@ -115,6 +145,7 @@ function draw(){
  enemies.forEach(e=>{if(!e.alive)return;let x=e.x-cam;ctx.fillStyle='#9144a8';ctx.beginPath();ctx.roundRect(x-14,e.y-17,28,27,8);ctx.fill();ctx.fillStyle='white';ctx.fillRect(x-7,e.y-9,4,6);ctx.fillRect(x+4,e.y-9,4,6)});
  // Room gate / finish marker
  rect(goal,H-150,8,85,'#f7f7f7');ctx.fillStyle='#ffdf46';ctx.beginPath();ctx.moveTo(goal+8-cam,H-150);ctx.lineTo(goal+55-cam,H-135);ctx.lineTo(goal+8-cam,H-120);ctx.fill();
+ if(remotePlayer&&remotePlayer.x>=cam-60&&remotePlayer.x<=cam+W+60){let rx=remotePlayer.x-cam,ry=remotePlayer.y;ctx.fillStyle=remotePlayer.big?'#f3bd43':'#3b8df0';ctx.fillRect(rx,ry,30,42);ctx.fillStyle='#d9efff';ctx.fillRect(rx+5,ry+5,20,10);ctx.fillStyle='#17243a';ctx.fillRect(rx+7,ry+8,4,4);ctx.fillRect(rx+19,ry+8,4,4);ctx.fillStyle='#fff';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('ДРУГ',rx+15,ry-8);ctx.textAlign='left'}
  if(pPlayerVisible()&&pipeAnim<=0){rect(player.x,player.y,player.w,player.h,player.big?'#f3bd43':'#e84a3b');rect(player.x+5,player.y+5,20,10,'#ffd1a3');rect(player.x+7,player.y+8,4,4,'#182334');rect(player.x+19,player.y+8,4,4,'#182334');rect(player.x+4,player.y+player.h-5,10,7,'#283b6b');rect(player.x+18,player.y+player.h-5,10,7,'#283b6b')}
  function pPlayerVisible(){return player.inv<=0||Math.floor(performance.now()/100)%2===0}
 }
