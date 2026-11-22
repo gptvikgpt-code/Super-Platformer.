@@ -14,11 +14,11 @@ const $=id=>document.getElementById(id),keys={left:false,right:false,jump:false,
 
 let netPeer=null,netConn=null,netRole='',netCode='',remotePlayer=null,netClock=0;
 function netStatus(t){$('netStatus').textContent=t}
-function netSend(data){if(netConn&&netConn.open){try{netConn.send(data)}catch(e){}}}
+function netSend(data){if(netConn&&netConn.open){try{netConn.send(data)}catch(e){}}}\nfunction netEnemyDead(id){if(Number.isInteger(id))netSend({type:'enemyDead',id})}\nfunction netItemGot(id){if(Number.isInteger(id))netSend({type:'itemGot',id})}
 function netAttach(conn){
  netConn=conn;
  conn.on('open',()=>{remotePlayer={x:100,y:100,face:1,big:false};netStatus('🟢 Друг подключён! Игра запускается.');$('netBadge').style.display='block';if(!running)start();say('Игрок подключился!')});
- conn.on('data',d=>{if(!d||typeof d!=='object')return;if(d.type==='state'&&d.player){remotePlayer=d.player;if(Number.isInteger(d.room)&&d.room!==room&&d.room>=1&&d.room<=50){room=d.room;build();say('Переход в комнату '+room)}}});
+ conn.on('data',d=>{if(!d||typeof d!=='object')return;if(d.type==='state'&&d.player){remotePlayer=d.player;if(netRole==='guest'&&Number.isInteger(d.room)&&d.room!==room&&d.room>=1&&d.room<=50){room=d.room;build();say('Вместе перешли в комнату '+room)}if(netRole==='guest'&&Array.isArray(d.enemies)){d.enemies.forEach((alive,i)=>{if(enemies[i])enemies[i].alive=!!alive})}if(netRole==='guest'&&Array.isArray(d.items)){d.items.forEach((got,i)=>{if(items[i])items[i].got=!!got})}}else if(d.type==='enemyDead'&&Number.isInteger(d.id)&&enemies[d.id]){enemies[d.id].alive=false}else if(d.type==='itemGot'&&Number.isInteger(d.id)&&items[d.id]){items[d.id].got=true}});
  conn.on('close',()=>{remotePlayer=null;$('netBadge').style.display='none';netStatus('Соединение с другом прервано')});
  conn.on('error',e=>netStatus('Ошибка канала связи: '+(e&&e.type||'проверьте интернет')));
 }
@@ -82,9 +82,9 @@ function build(){
 }
 function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function hurt(){if(player.inv>0)return;lives--;ui();if(lives<=0){running=false;$('panel').querySelector('h1').innerHTML='ИГРА ОКОНЧЕНА';$('desc').textContent='Счёт: '+score+' · Монеты: '+coins+' · Достигнута комната: '+room;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';coins=0;score=0;lives=3;room=1;ui()}else{player.x=Math.max(0,player.x-100);player.y=H-180;player.vy=0;player.inv=1.6}}
-function nextRoom(){if(room>=50){running=false;$('panel').querySelector('h1').textContent='ПОБЕДА!';$('desc').textContent='Все 50 комнат пройдены! Итоговый счёт: '+score;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';room=1;ui();return}room++;score+=250;build();say('НОВАЯ КОМНАТА '+room+' — НОВАЯ ЦВЕТОВАЯ ТЕМА!')}
+function nextRoom(){if(netRole==='guest')return;if(room>=50){running=false;$('panel').querySelector('h1').textContent='ПОБЕДА!';$('desc').textContent='Все 50 комнат пройдены! Итоговый счёт: '+score;$('start').textContent='ИГРАТЬ СНОВА';$('menu').style.display='grid';room=1;ui();return}room++;score+=250;build();say('НОВАЯ КОМНАТА '+room+' — НОВАЯ ЦВЕТОВАЯ ТЕМА!')}
 function update(dt){
- if(!running||paused)return;const p=player;netClock+=dt;if(netClock>.10){netClock=0;netSend({type:'state',room,player:{x:p.x,y:p.y,face:p.face,big:p.big}})}p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;p.pipeLock=Math.max(0,p.pipeLock-dt);shootCooldown=Math.max(0,shootCooldown-dt);
+ if(!running||paused)return;const p=player;netClock+=dt;if(netClock>.08){netClock=0;netSend({type:'state',room,player:{x:p.x,y:p.y,face:p.face,big:p.big},enemies:netRole==='host'?enemies.map(e=>e.alive):undefined,items:netRole==='host'?items.map(o=>o.got):undefined})}p.inv=Math.max(0,p.inv-dt);if(p.power>0)p.power-=dt;p.pipeLock=Math.max(0,p.pipeLock-dt);shootCooldown=Math.max(0,shootCooldown-dt);
  if(keys.shoot&&shootCooldown<=0){const sx=p.x+p.w/2+p.face*18,sy=p.y+p.h*.38;let target=null,dist=Infinity;for(const e of enemies){if(!e.alive)continue;const dx=(e.x-p.x)*p.face;if(dx>0&&dx<dist){dist=dx;target=e}}const targetY=target?target.y-5:sy;shots.push({x:sx,y:sy,vx:p.face*520,vy:Math.max(-260,Math.min(260,(targetY-sy)*1.8)),life:2});shootCooldown=.32}
  let dir=(keys.right?1:0)-(keys.left?1:0);if(dir){p.vx+=dir*1700*dt;p.face=dir}else p.vx*=Math.pow(.0008,dt);p.vx=Math.max(-285,Math.min(285,p.vx));
  if(keys.jump&&p.ground){p.vy=-620;p.ground=false}
@@ -125,12 +125,12 @@ function update(dt){
  if(pipeAnim>0)return;
  if(p.y>H+100)hurt();
  for(const b of blocks)if(b.bump>0)b.bump=Math.max(0,b.bump-dt);
- for(const shot of shots){shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;for(const e of enemies){if(e.alive&&hit({x:shot.x-11,y:shot.y-11,w:22,h:22},{x:e.x-18,y:e.y-23,w:36,h:32})){e.alive=false;shot.life=0;score+=50;ui();break}}}shots=shots.filter(z=>z.life>0&&z.x>0&&z.x<worldW);
- for(const o of items)if(!o.got&&Math.abs(p.x+p.w/2-o.x)<27&&Math.abs(p.y+p.h/2-o.y)<35){o.got=true;if(o.type==='star'){score+=100;say('Звезда! +100')}else{coins++;score+=10}ui()}
- for(const e of enemies)if(e.alive){e.x+=e.v*dt;if(Math.abs(e.x-e.base)>e.range)e.v*=-1;if(hit(p,{x:e.x-14,y:e.y-20,w:28,h:24})){if(p.vy>100&&p.y+p.h<e.y+10){e.alive=false;p.vy=-360;score+=50;ui()}else hurt()}}
+ for(const shot of shots){shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;for(const e of enemies){if(e.alive&&hit({x:shot.x-11,y:shot.y-11,w:22,h:22},{x:e.x-18,y:e.y-23,w:36,h:32})){e.alive=false;netEnemyDead(enemies.indexOf(e));shot.life=0;score+=50;ui();break}}}shots=shots.filter(z=>z.life>0&&z.x>0&&z.x<worldW);
+ for(const o of items)if(!o.got&&Math.abs(p.x+p.w/2-o.x)<27&&Math.abs(p.y+p.h/2-o.y)<35){o.got=true;netItemGot(items.indexOf(o));if(o.type==='star'){score+=100;say('Звезда! +100')}else{coins++;score+=10}ui()}
+ for(const e of enemies)if(e.alive){e.x+=e.v*dt;if(Math.abs(e.x-e.base)>e.range)e.v*=-1;if(hit(p,{x:e.x-14,y:e.y-20,w:28,h:24})){if(p.vy>100&&p.y+p.h<e.y+10){e.alive=false;netEnemyDead(enemies.indexOf(e));p.vy=-360;score+=50;ui()}else hurt()}}
  // Moving platforms
  for(const q of platforms)if(q.moving){q.y=q.baseY+Math.sin(performance.now()/550+q.phase)*24;if(p.ground&&Math.abs((p.y+p.h)-q.y)<3&&p.x+p.w>q.x&&p.x<q.x+q.w)p.x+=Math.sin(performance.now()/550+q.phase)*24*dt}
- if(p.x>goal-20)nextRoom();cam=Math.max(0,Math.min(worldW-W,p.x-W*.36));if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)$('toast').style.display='none'}
+ if(p.x>goal-20){if(netRole==='guest'){p.x=goal-55;p.vx=0}else nextRoom()}const cameraTarget=remotePlayer?(p.x+remotePlayer.x)/2:p.x;cam=Math.max(0,Math.min(worldW-W,cameraTarget-W*.36));if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)$('toast').style.display='none'}
 }
 function draw(){
  ctx.clearRect(0,0,W,H);let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,theme.sky[0]);g.addColorStop(1,theme.sky[1]);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
